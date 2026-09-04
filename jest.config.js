@@ -21,14 +21,16 @@ module.exports = {
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
     '!src/**/__tests__/**',
+    // Salt-tip dosyalar derlemede bos modul olur; olculecek kod icermezler.
+    '!src/**/types.ts',
     // Router ekranlari E2E kapsamina girer. Dar tutuldu: src/app altina yazilan
     // yardimci .ts dosyalari olculmeye devam eder.
     '!src/app/**/*.tsx',
   ],
   coverageThreshold: {
     global: { branches: 70, functions: 70, lines: 70, statements: 70 },
-    // TODO(sprint-1): './src/game/core/' icin %90 esigi core'un ilk commit'inde
-    // eklenecek. Var olmayan bir dizine esik koymak Jest'i
-    // "coverage data not found" hatasiyla dusurur.
+    // Oyun mantigi render'dan bagimsiz ve saf oldugu icin burada cok daha
+    // yuksek bir cita savunulabilir; spec'in DoD'u %90 istiyor.
+    './src/game/core/': { branches: 90, functions: 90, lines: 90, statements: 90 },
   },
 };
