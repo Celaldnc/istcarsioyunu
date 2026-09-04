@@ -1,7 +1,8 @@
 # İstanbul Çarşı Blok
 
 > Türk esnaf mahallesinden ilham alan, İstanbul temalı bir blok bulmaca oyunu.
-> Expo + React Native Skia + Reanimated ile tek kod tabanından iOS ve Android.
+> Expo + React Native Skia + Reanimated ile tek kod tabanından Android ve iOS.
+> **v1.0 hedefi Google Play**; iOS kod tabanında destekleniyor ama v1.1'e ertelendi.
 
 _A block-puzzle mobile game themed around Istanbul's bazaars, built solo with Expo,
 React Native Skia and Reanimated._
@@ -18,7 +19,8 @@ React Native Skia and Reanimated._
 | 3      | Gesture + sürükle-bırak + oyun döngüsü                       | —           |
 | 4      | Ses, skor, kalıcı depolama (MMKV)                            | —           |
 | 5      | 5 İstanbul teması, oyun modları, onboarding                  | —           |
-| 6      | EAS build, App Store + Play Store yayını                     | —           |
+| 6      | EAS build + Google Play yayını (kapalı test → production)    | —           |
+| 7      | iOS portu + App Store (v1.1, yalnızca v1.0 tutarsa)          | —           |
 
 ## Gereksinimler
 
@@ -27,7 +29,9 @@ React Native Skia and Reanimated._
   (`C:\Program Files\Android\Android Studio\jbr`)
 - **Android Studio** + Android SDK (platform 36, build-tools 36.x, NDK)
 - iOS derlemesi için **macOS + Xcode** gerekir. Windows'ta iOS yerel derleme
-  mümkün değildir; iOS tarafı EAS Cloud üzerinden alınır.
+  mümkün değildir. v1.0 kapsamında iOS derlenmiyor; iOS konfigürasyonu
+  (bundle identifier, görünen ad, `platforms`) bilerek korunuyor ki v1.1'de
+  port maliyeti düşük kalsın.
 
 ## Kurulum
 
@@ -78,6 +82,19 @@ Bu kural yorum satırıyla değil, **makineyle** zorlanır: `eslint.config.js`
 içindeki `no-restricted-imports` kuralı `src/game/core/**` altında
 React/React Native/Expo/Zustand importunu hata sayar. Böylece oyun mantığı
 render'dan bağımsız kalır ve milisaniyeler içinde test edilebilir.
+
+## Yayın Stratejisi
+
+**v1.0: yalnızca Google Play.** Gerekçe: Apple $99/yıl'a karşı Play $25 tek
+seferlik; Windows'ta iOS derlemesi mümkün değil; Expo/RN ile iOS portu yeniden
+yazım değil konfigürasyon işi. Uygulama tutarsa iOS v1.1'de açılır.
+
+**Play production'a çıkış şartı (kişisel geliştirici hesapları):** 13 Kasım
+2023'ten sonra açılmış kişisel hesaplar, production erişimi için **12 farklı
+testçiyle 14 gün kesintisiz kapalı test** yapmak zorundadır. Emülatör ve
+mükerrer hesaplar sayılmaz. Bu, Sprint 6'nın takvimine doğrudan girer:
+testçi toplama işine sprint başlamadan başlanmalıdır.
+(Kuruluş hesaplarında bu şart aranmaz.)
 
 ## Mimari Kararlar
 
