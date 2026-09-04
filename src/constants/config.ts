@@ -41,6 +41,15 @@ export const PIECES = {
   MAX_SPAN: 3,
 } as const;
 
+export const THEME = {
+  /**
+   * Bir temadaki farkli blok gorseli sayisi (simit, caydanlik, nazar...).
+   * Parca renk kimlikleri 0..PALETTE_SIZE-1 araligindadir.
+   * Temalarin kendisi Sprint 5'te game/data/themes.ts icinde tanimlanacak.
+   */
+  PALETTE_SIZE: 6,
+} as const;
+
 export const TRAY = {
   /** Ayni anda oyuncuya sunulan parca sayisi */
   PIECE_COUNT: 3,
