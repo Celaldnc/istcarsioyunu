@@ -7,6 +7,7 @@ import {
   getCell,
   hasAnyValidPlacement,
   isBoardEmpty,
+  isGameOver,
   isInside,
   placePiece,
 } from '../board';
@@ -265,6 +266,30 @@ describe('hasAnyValidPlacement', () => {
 
   it('bos parca listesinde yanlis', () => {
     expect(hasAnyValidPlacement(createBoard(3, 3), [])).toBe(false);
+  });
+});
+
+// --- isGameOver ----------------------------------------------------------
+
+describe('isGameOver', () => {
+  it('tepsideki parcalardan biri sigiyorsa oyun bitmemistir', () => {
+    const board = boardFrom(['111', '111', '11.']);
+
+    expect(isGameOver(board, [piece(HORIZONTAL_2), piece(SINGLE)])).toBe(false);
+  });
+
+  it('tepsideki hicbir parca sigmiyorsa oyun biter', () => {
+    const board = boardFrom(['111', '111', '11.']);
+
+    expect(isGameOver(board, [piece(HORIZONTAL_2), piece(VERTICAL_2)])).toBe(true);
+  });
+
+  it('tepsi bossa oyun bitmis sayilir', () => {
+    expect(isGameOver(createBoard(3, 3), [])).toBe(true);
+  });
+
+  it('bos tahtada oyun bitmez', () => {
+    expect(isGameOver(createBoard(3, 3), [piece(SQUARE_2X2)])).toBe(false);
   });
 });
 

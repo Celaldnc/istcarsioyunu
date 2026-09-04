@@ -113,6 +113,10 @@ export function isBoardEmpty(board: Board): boolean {
  * en kotu durumda ~80 x parca sayisi kontrol demektir, oyun dongusu icin
  * fazlasiyla ucuz.
  */
+export function isGameOver(board: Board, pieces: readonly Piece[]): boolean {
+  return !hasAnyValidPlacement(board, pieces);
+}
+
 export function hasAnyValidPlacement(board: Board, pieces: readonly Piece[]): boolean {
   const width = boardWidth(board);
   const height = boardHeight(board);
