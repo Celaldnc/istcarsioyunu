@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "İstanbul Çarşı Blok",
+    "name": "Istanbul Carsi Blok",
     "slug": "ist-carsi-blok",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,7 +10,10 @@
     "platforms": ["ios", "android"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.celaldinc.istcarsiblok"
+      "bundleIdentifier": "com.celaldinc.istcarsiblok",
+      "infoPlist": {
+        "CFBundleDisplayName": "İstanbul Çarşı Blok"
+      }
     },
     "android": {
       "package": "com.celaldinc.istcarsiblok",
@@ -35,6 +38,12 @@
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "./plugins/withLocalizedAppName",
+        {
+          "android": "İstanbul Çarşı Blok"
         }
       ]
     ],
