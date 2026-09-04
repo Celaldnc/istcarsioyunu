@@ -1,0 +1,3 @@
+# Full test suite + coverage esikleri.
+# Yavas ama nadir calisir; hizli guard pre-commit'te.
+npm run test:ci
