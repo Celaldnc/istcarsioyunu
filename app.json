@@ -1,16 +1,18 @@
 {
   "expo": {
-    "name": "istcarsioyun",
-    "slug": "istcarsioyun",
+    "name": "İstanbul Çarşı Blok",
+    "slug": "ist-carsi-blok",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "istcarsioyun",
+    "scheme": "istcarsiblok",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.celaldinc.istcarsiblok"
     },
     "android": {
+      "package": "com.celaldinc.istcarsiblok",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
