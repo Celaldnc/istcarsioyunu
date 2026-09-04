@@ -1,4 +1,3 @@
-import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -6,38 +5,28 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
+// expo-router bu adla export edilen bileseni hata siniri olarak kullanir.
+export { AppErrorBoundary as ErrorBoundary } from '@/components/AppErrorBoundary';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
+  // /modal yeniden yuklendiginde geri butonunun kalmasini saglar.
   initialRouteName: '(tabs)',
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+// Splash'in asset yuklemesi bitmeden kapanmasini engeller.
+// preventAutoHideAsync bir promise dondurur; yakalanmazsa unhandled rejection uyarisi verir.
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* splash zaten gizlenmisse onemsiz */
+});
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require('../../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
+  // TODO(sprint-2): Skia atlaslari ve TODO(sprint-4): ses dosyalari yuklenene
+  // kadar splash burada tutulacak. Su an bekletilecek asset yok.
   useEffect(() => {
-    if (error) throw error;
-  }, [error]);
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
+    SplashScreen.hideAsync().catch(() => {
+      /* splash zaten gizlenmisse onemsiz */
+    });
+  }, []);
 
   return <RootLayoutNav />;
 }
@@ -49,7 +38,8 @@ function RootLayoutNav() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        {/* title verilmezse header rota adini ("modal") gosterir. */}
+        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Hakkında' }} />
       </Stack>
     </ThemeProvider>
   );

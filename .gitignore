@@ -42,3 +42,14 @@ yarn-error.*
 
 # testing
 coverage/
+
+# imzalama ve kimlik bilgileri
+*.keystore
+credentials.json
+google-services.json
+GoogleService-Info.plist
+
+# ortam degiskenleri
+.env
+.env.*
+!.env.example

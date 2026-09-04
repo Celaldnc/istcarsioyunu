@@ -1,44 +1,57 @@
-import { SymbolView } from 'expo-symbols';
+import { MaterialIcons } from '@expo/vector-icons';
 import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Pressable, StyleSheet, type ColorValue } from 'react-native';
 
-import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
+import Colors from '@/constants/Colors';
+
+const ICON = {
+  TAB_SIZE: 26,
+  HEADER_SIZE: 24,
+  /** iOS HIG 44pt / Material 48dp dokunma hedefini saglayan padding */
+  HEADER_TOUCH_PADDING: 12,
+  PRESSED_OPACITY: 0.5,
+} as const;
+
+type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
+
+function tabIcon(name: MaterialIconName) {
+  return function TabIcon({ color }: { color: ColorValue }) {
+    return <MaterialIcons name={name} size={ICON.TAB_SIZE} color={color} />;
+  };
+}
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme];
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        headerShown: true,
+        tabBarActiveTintColor: theme.tint,
+        tabBarInactiveTintColor: theme.tabIconDefault,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Oyna',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
-            />
-          ),
+          tabBarIcon: tabIcon('grid-view'),
           headerRight: () => (
             <Link href="/modal" asChild>
-              <Pressable style={{ marginRight: 15 }}>
+              {/* Erisilebilir ad Pressable'a veriliyor: ikon bileseni Android'de
+                  accessibility prop'larini iletmez, etiket sessizce kaybolur. */}
+              <Pressable
+                accessibilityLabel="Hakkında"
+                accessibilityHint="Oyun hakkında bilgi ekranını açar"
+                style={styles.headerButton}
+              >
                 {({ pressed }) => (
-                  <SymbolView
-                    name={{ ios: 'info.circle', android: 'info', web: 'info' }}
-                    size={25}
-                    tintColor={Colors[colorScheme].text}
-                    style={{ opacity: pressed ? 0.5 : 1 }}
+                  <MaterialIcons
+                    name="info-outline"
+                    size={ICON.HEADER_SIZE}
+                    color={theme.text}
+                    style={{ opacity: pressed ? ICON.PRESSED_OPACITY : 1 }}
                   />
                 )}
               </Pressable>
@@ -50,19 +63,16 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: 'Ayarlar',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
-            />
-          ),
+          tabBarIcon: tabIcon('settings'),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  headerButton: {
+    padding: ICON.HEADER_TOUCH_PADDING,
+    marginRight: 3,
+  },
+});

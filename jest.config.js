@@ -2,21 +2,33 @@
 module.exports = {
   preset: 'jest-expo',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  // Testler arasi mock sizintisini engeller.
+  clearMocks: true,
+  restoreMocks: true,
+  testPathIgnorePatterns: [
+    '<rootDir>/node_modules/',
+    '<rootDir>/android/',
+    '<rootDir>/ios/',
+    '<rootDir>/.expo/',
+    // Router kokune test dosyasi konmamali; oradaki her dosya rota adayidir.
+    '<rootDir>/src/app/',
+  ],
   // DIKKAT: burada moduleNameMapper TANIMLAMA. Jest, preset'in ayni anahtarini
-  // birlestirmez, ezer. jest-expo preset'i hem tsconfig'deki "@/*" alias'ini hem
-  // de "^react-native($|/.*)" tekillestirmesini saglar; ezersen react-native iki
-  // ayri modul ornegi olarak yuklenir ve RTL'in screen nesnesi hic baglanmaz.
+  // birlestirmez, ezer. jest-expo hem tsconfig'deki "@/*" alias'ini hem de
+  // "^react-native($|/.*)" tekillestirmesini oradan saglar; ezersen react-native
+  // iki ayri modul ornegi olarak yuklenir ve RTL'in screen nesnesi hic baglanmaz.
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
     '!src/**/__tests__/**',
-    // Router ekranlari E2E kapsamina girer, birim testi hedefi degildir.
-    '!src/app/**',
+    // Router ekranlari E2E kapsamina girer. Dar tutuldu: src/app altina yazilan
+    // yardimci .ts dosyalari olculmeye devam eder.
+    '!src/app/**/*.tsx',
   ],
   coverageThreshold: {
     global: { branches: 70, functions: 70, lines: 70, statements: 70 },
-    // NOT: './src/game/core/' icin %90 esigi Sprint 1'in ilk commit'inde
-    // eklenecek. Henuz var olmayan bir dizine esik koymak Jest'i
+    // TODO(sprint-1): './src/game/core/' icin %90 esigi core'un ilk commit'inde
+    // eklenecek. Var olmayan bir dizine esik koymak Jest'i
     // "coverage data not found" hatasiyla dusurur.
   },
 };

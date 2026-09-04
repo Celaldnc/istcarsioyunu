@@ -2,6 +2,7 @@
 const { defineConfig } = require('eslint/config');
 const expoConfig = require('eslint-config-expo/flat');
 const prettierConfig = require('eslint-config-prettier/flat');
+const testingLibrary = require('eslint-plugin-testing-library');
 
 module.exports = defineConfig([
   {
@@ -21,22 +22,28 @@ module.exports = defineConfig([
   {
     // Mimari kural, makineyle zorlanir: src/game/core saf TypeScript kalmalidir.
     // Boylece oyun mantigi RN calistirmadan, milisaniyelerde test edilebilir.
-    files: ['src/game/core/**/*.ts'],
+    files: ['src/game/core/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             {
+              // Alt yollar da kapatildi: 'react-native/Libraries/...' gibi kacaklar
+              // aksi halde '*' slash'i gecmedigi icin yakalanmiyordu.
               group: [
                 'react',
+                'react/*',
                 'react-*',
-                'react-native',
-                'react-native-*',
+                'react-*/**',
+                'react-native/*',
                 'expo',
                 'expo-*',
+                'expo-*/**',
+                '@expo/*',
                 '@shopify/*',
                 'zustand',
+                'zustand/*',
               ],
               message:
                 'src/game/core saf TypeScript olmalidir (RN/Expo importu yasak). Render veya state ihtiyacini engine/ ya da store/ katmanina tasi.',
@@ -45,5 +52,12 @@ module.exports = defineConfig([
         },
       ],
     },
+  },
+  {
+    // @testing-library/react-native v14'te render/fireEvent/renderHook ASENKRON.
+    // await unutulursa "`render` function has not been called" gibi kafa karistirici
+    // hatalar cikar. Bu kurallar o sinifin tamamini CI'da yakalar.
+    files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}'],
+    ...testingLibrary.configs['flat/react'],
   },
 ]);

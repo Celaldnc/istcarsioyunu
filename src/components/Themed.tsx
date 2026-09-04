@@ -1,8 +1,8 @@
 /**
- * Learn more about Light and Dark modes:
- * https://docs.expo.io/guides/color-schemes/
+ * Temaya duyarli temel bilesenler.
+ * https://docs.expo.dev/guides/color-schemes/
  */
-import { Text as DefaultText, View as DefaultView } from 'react-native';
+import { Text as DefaultText, View as DefaultView, StyleSheet } from 'react-native';
 
 import { useColorScheme } from './useColorScheme';
 
@@ -23,11 +23,11 @@ export function useThemeColor(
   const theme = useColorScheme();
   const colorFromProps = props[theme];
 
-  if (colorFromProps) {
+  // Truthy degil, tanimlilik kontrolu: bos string bilincli bir deger olabilir.
+  if (colorFromProps !== undefined) {
     return colorFromProps;
-  } else {
-    return Colors[theme][colorName];
   }
+  return Colors[theme][colorName];
 }
 
 export function Text(props: TextProps) {
@@ -43,3 +43,32 @@ export function View(props: ViewProps) {
 
   return <DefaultView style={[{ backgroundColor }, style]} {...otherProps} />;
 }
+
+/**
+ * Ekran basligi. Gorsel olarak baslik olmak yetmez; ekran okuyucularin
+ * baslik gezinmesi (VoiceOver rotor / TalkBack headings) icin rol gerekir.
+ */
+export function Heading(props: TextProps) {
+  const { style, ...otherProps } = props;
+  return <Text accessibilityRole="header" style={[styles.heading, style]} {...otherProps} />;
+}
+
+/** Temaya duyarli yatay ayrac. Rengi Colors.separator token'indan gelir. */
+export function Separator(props: ViewProps) {
+  const { style, lightColor, darkColor, ...otherProps } = props;
+  const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'separator');
+
+  return (
+    <DefaultView
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[styles.separator, { backgroundColor }, style]}
+      {...otherProps}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  heading: { fontSize: 24, fontWeight: 'bold' },
+  separator: { marginVertical: 24, height: 1, width: '80%' },
+});

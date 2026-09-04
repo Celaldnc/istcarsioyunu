@@ -1,17 +1,19 @@
 import { Link, Stack } from 'expo-router';
 import { StyleSheet } from 'react-native';
 
-import { Text, View } from '@/components/Themed';
+import { Heading, Text, View, useThemeColor } from '@/components/Themed';
 
 export default function NotFoundScreen() {
+  const linkColor = useThemeColor({}, 'link');
+
   return (
     <>
       <Stack.Screen options={{ title: 'Bulunamadı' }} />
       <View style={styles.container}>
-        <Text style={styles.title}>Bu sayfa bulunamadı.</Text>
+        <Heading>Bu ekran bulunamadı.</Heading>
 
-        <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>Ana ekrana dön</Text>
+        <Link href="/" style={styles.link} accessibilityRole="link">
+          <Text style={[styles.linkText, { color: linkColor }]}>Ana ekrana dön</Text>
         </Link>
       </View>
     </>
@@ -19,22 +21,14 @@ export default function NotFoundScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
+  // Material dokunma hedefi 48dp; yatay padding olmadan hedef yalnizca metin genisligi kadardi.
   link: {
-    marginTop: 15,
-    paddingVertical: 15,
+    marginTop: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    minHeight: 48,
+    justifyContent: 'center',
   },
-  linkText: {
-    fontSize: 14,
-    color: '#2e78b7',
-  },
+  linkText: { fontSize: 14 },
 });
