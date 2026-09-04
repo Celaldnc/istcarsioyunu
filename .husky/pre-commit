@@ -1,0 +1,4 @@
+# Hizli guard (~5sn): sadece staged dosyalar + tip kontrolu.
+# Full test suite pre-push'ta calisir; commit akisini yavaslatmamak icin ayrildi.
+npx lint-staged
+npm run typecheck
