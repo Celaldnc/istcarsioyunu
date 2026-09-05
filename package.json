@@ -52,7 +52,8 @@
     "prepare": "husky",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:ci": "jest --coverage --ci --maxWorkers=2"
+    "test:ci": "jest --coverage --ci --maxWorkers=2",
+    "android:emu": "expo run:android --no-install -- -PreactNativeArchitectures=x86_64"
   },
   "private": true,
   "lint-staged": {

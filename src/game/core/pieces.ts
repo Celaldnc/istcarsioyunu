@@ -157,6 +157,12 @@ export function shapeById(id: string): Shape | undefined {
 }
 
 /**
+ * Bir parca uretmek icin harcanan rng cagrisi sayisi (sekil + renk).
+ * rng.advance ile ileri sararken bu sabit gerekiyor.
+ */
+export const RNG_CALLS_PER_PIECE = 2;
+
+/**
  * Tepsi icin parca uretir.
  *
  * Ayni rng ayni diziyi verdigi icin Daily modunda tum oyuncular ayni

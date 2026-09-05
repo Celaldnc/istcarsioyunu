@@ -63,6 +63,14 @@ export const TRAY = {
   SLOT_GAP: 12,
 } as const;
 
+export const DRAG = {
+  /**
+   * Parcanin parmagin kac HUCRE ustunde durdugu.
+   * 0 olsaydi parmak tam da birakilacak alani kapatirdi.
+   */
+  LIFT: 1.5,
+} as const;
+
 export const SCORING = {
   /** Temizlenen her satir/sutun icin taban puan */
   POINTS_PER_LINE: 10,

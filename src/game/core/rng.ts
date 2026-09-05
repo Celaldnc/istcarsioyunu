@@ -65,3 +65,16 @@ export function pickWeighted<T>(rng: Rng, items: readonly WeightedItem<T>[]): T 
 
   return chosen.value;
 }
+
+/**
+ * Ureteci verilen adim kadar ileri sarar.
+ *
+ * Kalici depolamadan geri yuklerken kullanilir: seed ve o ana kadar cekilen
+ * parca sayisi saklanir, uretec ayni noktaya sarilarak dizinin devami alinir.
+ * Boylece rng fonksiyonunu serilestirmek gerekmez.
+ */
+export function advance(rng: Rng, steps: number): void {
+  for (let i = 0; i < steps; i += 1) {
+    rng();
+  }
+}
