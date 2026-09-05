@@ -1,0 +1,141 @@
+import {
+  DEFAULT_SETTINGS,
+  clearGame,
+  loadGame,
+  loadHighScore,
+  loadSettings,
+  recordScore,
+  saveGame,
+  saveSettings,
+} from '../persistence';
+import { createMemoryStore } from '../storage';
+
+import { playPiece, startGame } from '@/game/core/game';
+import type { Piece } from '@/game/core/types';
+
+const SEED = 20260905;
+
+const firstFilled = (tray: readonly (Piece | undefined)[]): number =>
+  tray.findIndex((piece) => piece !== undefined);
+
+describe('oyun kaydi', () => {
+  it('kaydedilen oyun geri yuklenir', () => {
+    const store = createMemoryStore();
+    const state = startGame(SEED);
+
+    saveGame(store, state);
+
+    expect(loadGame(store)).toEqual(state);
+  });
+
+  it('kayit yoksa null doner', () => {
+    expect(loadGame(createMemoryStore())).toBeNull();
+  });
+
+  it('bozuk kayit oyunu cokertmez, null doner', () => {
+    const store = createMemoryStore({ 'game.current': 'bu json degil' });
+
+    expect(loadGame(store)).toBeNull();
+  });
+
+  it('temizlenen kayit geri gelmez', () => {
+    const store = createMemoryStore();
+    saveGame(store, startGame(SEED));
+
+    clearGame(store);
+
+    expect(loadGame(store)).toBeNull();
+  });
+
+  it('ilerlemis oyun kaydedilip devam ettirilebilir', () => {
+    const store = createMemoryStore();
+    let state = startGame(SEED);
+    const index = firstFilled(state.tray);
+    state = playPiece(state, index, { x: 0, y: 0 });
+
+    saveGame(store, state);
+    const restored = loadGame(store);
+
+    expect(restored?.tray[index]).toBeUndefined();
+    expect(restored?.piecesDrawn).toBe(state.piecesDrawn);
+  });
+});
+
+describe('yuksek skor', () => {
+  it('kayit yokken sifirdir', () => {
+    expect(loadHighScore(createMemoryStore())).toBe(0);
+  });
+
+  it('ilk skor rekor olarak yazilir', () => {
+    const store = createMemoryStore();
+
+    expect(recordScore(store, 250)).toBe(250);
+    expect(loadHighScore(store)).toBe(250);
+  });
+
+  it('daha yuksek skor rekoru gunceller', () => {
+    const store = createMemoryStore();
+    recordScore(store, 100);
+
+    expect(recordScore(store, 400)).toBe(400);
+    expect(loadHighScore(store)).toBe(400);
+  });
+
+  it('daha dusuk skor rekoru DUSURMEZ', () => {
+    const store = createMemoryStore();
+    recordScore(store, 400);
+
+    expect(recordScore(store, 100)).toBe(400);
+    expect(loadHighScore(store)).toBe(400);
+  });
+
+  it('esit skor rekoru degistirmez', () => {
+    const store = createMemoryStore();
+    recordScore(store, 400);
+
+    expect(recordScore(store, 400)).toBe(400);
+  });
+
+  it('bozuk rekor degeri sifir kabul edilir (skor erisilmez kalmasin)', () => {
+    const store = createMemoryStore({ 'score.high': 'cok yuksek' });
+
+    expect(loadHighScore(store)).toBe(0);
+    expect(recordScore(store, 10)).toBe(10);
+  });
+
+  it('negatif rekor degeri sifir kabul edilir', () => {
+    expect(loadHighScore(createMemoryStore({ 'score.high': '-5' }))).toBe(0);
+  });
+});
+
+describe('ayarlar', () => {
+  it('kayit yokken varsayilanlar doner', () => {
+    expect(loadSettings(createMemoryStore())).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('kaydedilen ayar geri yuklenir', () => {
+    const store = createMemoryStore();
+
+    saveSettings(store, { soundEnabled: false });
+
+    expect(loadSettings(store).soundEnabled).toBe(false);
+  });
+
+  it('bozuk ayar kaydi varsayilanlara duser', () => {
+    expect(loadSettings(createMemoryStore({ settings: '{bozuk' }))).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('nesne olmayan ayar kaydi varsayilanlara duser', () => {
+    expect(loadSettings(createMemoryStore({ settings: '"acik"' }))).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('eksik alanli ayar kaydinda alan varsayilana duser', () => {
+    expect(loadSettings(createMemoryStore({ settings: '{}' })).soundEnabled).toBe(true);
+  });
+
+  it('yanlis tipli alan varsayilana duser', () => {
+    expect(
+      loadSettings(createMemoryStore({ settings: '{"soundEnabled":"evet"}' })).soundEnabled,
+    ).toBe(true);
+  });
+});

@@ -1,5 +1,17 @@
 import { create } from 'zustand';
 
+import {
+  loadGame,
+  loadHighScore,
+  loadSettings,
+  recordScore,
+  saveGame,
+  saveSettings,
+} from './persistence';
+import { getAppStore } from './storage';
+
+import { getSoundManager } from '@/game/audio';
+import { cueForMove } from '@/game/audio/cues';
 import { playPiece, restart, startGame, type GameState } from '@/game/core/game';
 import { seedFromDate } from '@/game/core/rng';
 import type { Point } from '@/game/core/types';
@@ -8,44 +20,87 @@ import type { Point } from '@/game/core/types';
  * Oyun durumunun React'e baglanmasi.
  *
  * Bu dosya BILEREK ince: tum kurallar src/game/core/game.ts icindeki saf
- * reducer'da. Store yalnizca o gecisleri cagirip sonucu yayinliyor. Boylece
- * oyun mantigi store veya React calistirmadan test edilebiliyor ve Sprint 4'te
- * kalici depolama eklendiginde kurallar degismiyor.
+ * reducer'da, kalicilik politikasi persistence.ts'te, ses secimi cues.ts'te.
+ * Store yalnizca bunlari birbirine bagliyor.
  */
 
 export interface GameStore extends GameState {
+  readonly highScore: number;
+  readonly soundEnabled: boolean;
+
   /** Yeni oyun baslatir. Seed verilmezse gunun tarihinden turetilir. */
   newGame: (seed?: number) => void;
   /** Parcayi oynar; hamle kabul edilmediyse false doner. */
   play: (trayIndex: number, origin: Point) => boolean;
   /** Ayni seed ile bastan baslar. */
   playAgain: () => void;
+  setSoundEnabled: (enabled: boolean) => void;
+  /** Durumu hemen diske yazar (uygulama arka plana dusunce). */
+  persistNow: () => void;
 }
 
-const initialState = (): GameState => startGame(seedFromDate(new Date()));
+/**
+ * Acilista kaydedilmis oyun varsa ondan devam edilir.
+ * Bozuk kayit null doner ve sessizce yeni oyun baslar.
+ */
+function initialGame(): GameState {
+  return loadGame(getAppStore()) ?? startGame(seedFromDate(new Date()));
+}
 
-export const useGameStore = create<GameStore>((set, get) => ({
-  ...initialState(),
+export const useGameStore = create<GameStore>((set, get) => {
+  const storage = getAppStore();
+  const settings = loadSettings(storage);
+  const sound = getSoundManager();
+  sound.setEnabled(settings.soundEnabled);
+  // Ilk hamlede gecikme olmasin diye sesler simdiden bellege alinir.
+  sound.preload();
 
-  newGame: (seed) => {
-    set(startGame(seed ?? seedFromDate(new Date())));
-  },
+  return {
+    ...initialGame(),
+    highScore: loadHighScore(storage),
+    soundEnabled: settings.soundEnabled,
 
-  play: (trayIndex, origin) => {
-    const current = get();
-    const next = playPiece(current, trayIndex, origin);
+    newGame: (seed) => {
+      const next = startGame(seed ?? seedFromDate(new Date()));
+      saveGame(storage, next);
+      set(next);
+    },
 
-    // Saf reducer gecersiz hamlede AYNI referansi dondurur; bu, "kabul
-    // edilmedi" sinyalini bedava veriyor.
-    if (next === (current as GameState)) {
-      return false;
-    }
+    play: (trayIndex, origin) => {
+      const current = get();
+      const next = playPiece(current, trayIndex, origin);
 
-    set(next);
-    return true;
-  },
+      sound.play(cueForMove(current, next));
 
-  playAgain: () => {
-    set(restart(get()));
-  },
-}));
+      // Saf reducer gecersiz hamlede AYNI referansi dondurur.
+      if (next === (current as GameState)) {
+        return false;
+      }
+
+      saveGame(storage, next);
+
+      set({
+        ...next,
+        highScore:
+          next.status === 'gameOver' ? recordScore(storage, next.score) : current.highScore,
+      });
+      return true;
+    },
+
+    playAgain: () => {
+      const next = restart(get());
+      saveGame(storage, next);
+      set(next);
+    },
+
+    setSoundEnabled: (enabled) => {
+      sound.setEnabled(enabled);
+      saveSettings(storage, { soundEnabled: enabled });
+      set({ soundEnabled: enabled });
+    },
+
+    persistNow: () => {
+      saveGame(storage, get());
+    },
+  };
+});

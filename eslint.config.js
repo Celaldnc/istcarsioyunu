@@ -54,6 +54,18 @@ module.exports = defineConfig([
     },
   },
   {
+    // Gelistirme scriptleri Node ortaminda calisir, React Native'de degil.
+    files: ['scripts/**/*.{js,mjs,cjs}'],
+    languageOptions: {
+      globals: {
+        Buffer: 'readonly',
+        process: 'readonly',
+        console: 'readonly',
+        __dirname: 'readonly',
+      },
+    },
+  },
+  {
     // @testing-library/react-native v14'te render/fireEvent/renderHook ASENKRON.
     // await unutulursa "`render` function has not been called" gibi kafa karistirici
     // hatalar cikar. Bu kurallar o sinifin tamamini CI'da yakalar.

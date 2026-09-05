@@ -1,5 +1,11 @@
+import { loadGame } from '../persistence';
+import { getAppStore } from '../storage';
+
 import { canPlace } from '@/game/core/board';
+import { shapeById } from '@/game/core/pieces';
 import type { Piece, Point } from '@/game/core/types';
+
+import { BOARD } from '@/constants/config';
 import { useGameStore } from '@/game/store/gameStore';
 
 const SEED = 20260905;
@@ -96,5 +102,82 @@ describe('useGameStore', () => {
       expect(useGameStore.getState().score).toBeGreaterThanOrEqual(previous);
       previous = useGameStore.getState().score;
     }
+  });
+});
+
+describe('kalicilik ve ayarlar', () => {
+  it('yuksek skor baslangicta yuklenir', () => {
+    expect(useGameStore.getState().highScore).toBeGreaterThanOrEqual(0);
+  });
+
+  it('oyun bitmeden yuksek skor guncellenmez', () => {
+    const before = useGameStore.getState().highScore;
+    const index = firstFilled(useGameStore.getState().tray);
+
+    useGameStore.getState().play(index, firstFit(index));
+
+    expect(useGameStore.getState().highScore).toBe(before);
+  });
+
+  it('ses ayari acilip kapatilabilir ve durumda yansir', () => {
+    useGameStore.getState().setSoundEnabled(false);
+    expect(useGameStore.getState().soundEnabled).toBe(false);
+
+    useGameStore.getState().setSoundEnabled(true);
+    expect(useGameStore.getState().soundEnabled).toBe(true);
+  });
+
+  it('persistNow hata firlatmaz', () => {
+    expect(() => useGameStore.getState().persistNow()).not.toThrow();
+  });
+
+  it('kaydedilen oyun sonraki yuklemede geri gelir', () => {
+    const index = firstFilled(useGameStore.getState().tray);
+    useGameStore.getState().play(index, firstFit(index));
+    const expected = useGameStore.getState().board;
+
+    // Store'un kullandigi ayni depodan okuyoruz.
+    const restored = loadGame(getAppStore());
+
+    expect(restored?.board).toEqual(expected);
+  });
+});
+
+describe('oyun sonunda yuksek skor', () => {
+  it('oyun bitince skor rekor olarak kaydedilir', () => {
+    // Capraz desen: hicbir cizgi dolu degil, bosluklar izole.
+    // Tek kare disindaki parcalar hicbir yere sigmaz.
+    const diagonal = Array.from({ length: BOARD.ROWS }, (_, y) => [y % BOARD.COLS, y] as const);
+    const empties = [...diagonal, [5, 0] as const];
+    const board = Array.from({ length: BOARD.ROWS }, (_, y) =>
+      Array.from({ length: BOARD.COLS }, (_, x) =>
+        empties.some(([ex, ey]) => ex === x && ey === y) ? null : 1,
+      ),
+    );
+
+    const dot = shapeById('dot');
+    const plus = shapeById('plus');
+    if (dot === undefined || plus === undefined) {
+      throw new Error('Test kurulumu hatali.');
+    }
+
+    useGameStore.setState({
+      board,
+      tray: [
+        { shape: dot, colorId: 1 },
+        { shape: plus, colorId: 1 },
+        { shape: plus, colorId: 1 },
+      ],
+      score: 12345,
+      status: 'playing',
+      lastClear: { rows: [], cols: [] },
+      lastGain: 0,
+    });
+
+    const accepted = useGameStore.getState().play(0, { x: 5, y: 0 });
+
+    expect(accepted).toBe(true);
+    expect(useGameStore.getState().status).toBe('gameOver');
+    expect(useGameStore.getState().highScore).toBeGreaterThanOrEqual(12345);
   });
 });

@@ -45,7 +45,8 @@
         {
           "android": "İstanbul Çarşı Blok"
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true
