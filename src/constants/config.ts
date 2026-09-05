@@ -23,6 +23,8 @@ export const BOARD = {
   CELL_GAP: 2,
   /** Tahtanin ekran kenarina birakacagi bosluk (dp, tek taraf) */
   SCREEN_MARGIN: 8,
+  /** Hucre kosesinin yuvarlaklik yaricapi (dp) */
+  CELL_RADIUS: 6,
 } as const;
 
 export const LAYOUT = {
@@ -53,6 +55,12 @@ export const THEME = {
 export const TRAY = {
   /** Ayni anda oyuncuya sunulan parca sayisi */
   PIECE_COUNT: 3,
+  /** Tepsideki onizleme hucrelerinin ust siniri (dp) */
+  MAX_CELL_SIZE: 22,
+  /** Tepsi hucreleri arasi bosluk (dp) */
+  CELL_GAP: 2,
+  /** Iki parca yuvasi arasindaki bosluk (dp) */
+  SLOT_GAP: 12,
 } as const;
 
 export const SCORING = {
