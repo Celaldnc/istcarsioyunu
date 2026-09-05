@@ -43,6 +43,10 @@ export const ESNAF_EVENTS = [
   'haggleWon',
   'haggleLost',
   'levelWon',
+  'catGift',
+  'gateLit',
+  'festival',
+  'current',
   // gun dongusu
   'morning',
   'evening',
@@ -130,6 +134,18 @@ export const ESNAF_LINES: Readonly<Record<EsnafEvent, readonly string[]>> = {
   haggleWon: ['Pazarlık senin, al parçanı.', 'Hadi bu seferlik…', 'Ustalıkla pazarlık ettin!'],
   haggleLost: ['Olmadı, indirim yok.', 'Pazarlık bu, kaybettin.', 'Bir dahakine daha hızlı!'],
   levelWon: ['Semt tamam! Kartpostal senin.', 'Bu sokağı bitirdin!', 'Yolculuk devam ediyor!'],
+  catGift: ['Tekir fare getirdi, tezgâh açıldı!', 'Kedi hediye bıraktı!', 'Tekir sana çalışıyor!'],
+  gateLit: [
+    'Bir kapının feneri yandı!',
+    'Kapı açıldı, üç kaldı… ya da az.',
+    'Fener yandı, çarşı ışıklanıyor.',
+  ],
+  festival: [
+    'ÇARŞI ŞENLİĞİ! Puanlar iki kat!',
+    'Dört kapı açık, davul zurna!',
+    'Şenlik başladı, kaçırma!',
+  ],
+  current: ['Akıntı! Tezgâh kaydı.', 'Vapur geçti, dalga vurdu.', 'Boğaz akıyor, plan değişti.'],
   morning: ['Günaydın! Simitler sıcak.', 'Sabah çayı hazır.', 'Erkenci kuş… çarşı senin.'],
   evening: [
     'Akşam oldu, Boğaz ışıl ışıl.',
@@ -160,7 +176,9 @@ const NEAR_DEATH_EMPTY_CELLS = 12;
 /** Canli olaylarin konusma onceligi (ilk bulunan konusulur). */
 const LIVE_PRIORITY: readonly GameEvent[] = [
   'levelWon',
+  'festival',
   'makamComplete',
+  'catGift',
   'bridge',
   'gullFed',
   'nazarCleared',
@@ -169,6 +187,8 @@ const LIVE_PRIORITY: readonly GameEvent[] = [
   'nazarSpawned',
   'gullDove',
   'gullLanded',
+  'gateLit',
+  'current',
   'catMoved',
   'catPetted',
   'haggleWon',

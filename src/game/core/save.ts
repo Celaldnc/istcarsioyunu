@@ -83,6 +83,9 @@ interface SavedGameV4 extends Omit<SavedGameV3, 'version'> {
   readonly curses: readonly Curse[];
   readonly hagglesLeft: number;
   readonly progress: Progress;
+  readonly gates: number;
+  readonly festivalTurns: number;
+  readonly catPets: number;
 }
 
 type SavedGame = SavedGameV4;
@@ -111,6 +114,9 @@ const MIGRATIONS: Readonly<
     curses: [],
     hagglesLeft: 0,
     progress: NO_PROGRESS,
+    gates: 0,
+    festivalTurns: 0,
+    catPets: 0,
   }),
 };
 
@@ -136,6 +142,9 @@ export function serializeGame(state: GameState): string {
     curses: state.curses,
     hagglesLeft: state.hagglesLeft,
     progress: state.progress,
+    gates: state.gates,
+    festivalTurns: state.festivalTurns,
+    catPets: state.catPets,
   };
 
   return JSON.stringify(payload);
@@ -385,7 +394,10 @@ export function deserializeGame(json: string): GameState | null {
     typeof saved.esnafId !== 'string' ||
     !(saved.levelId === null || typeof saved.levelId === 'string') ||
     !isCount(saved.moves) ||
-    !isCount(saved.hagglesLeft)
+    !isCount(saved.hagglesLeft) ||
+    !isCount(saved.gates ?? 0) ||
+    !isCount(saved.festivalTurns ?? 0) ||
+    !isCount(saved.catPets ?? 0)
   ) {
     return null;
   }
@@ -428,6 +440,10 @@ export function deserializeGame(json: string): GameState | null {
     curses,
     hagglesLeft: saved.hagglesLeft,
     progress,
+    // v4 icinde sonradan eklenen alanlar: eski v4 kayitlarda yok, sifir sayilir.
+    gates: saved.gates ?? 0,
+    festivalTurns: saved.festivalTurns ?? 0,
+    catPets: saved.catPets ?? 0,
     // Animasyon ipuclari gecicidir; geri yuklerken sifirlanir.
     lastClear: { rows: [], cols: [] },
     lastGain: 0,

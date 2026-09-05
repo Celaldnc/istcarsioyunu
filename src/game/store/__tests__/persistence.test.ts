@@ -8,6 +8,9 @@ import {
   awardPostcard,
   loadStats,
   saveStats,
+  loadDaily,
+  recordDaily,
+  dailyKey,
   recordScore,
   saveGame,
   saveSettings,
@@ -196,7 +199,7 @@ describe('esnaf ayari kaliciligi', () => {
 
 describe('yolculuk ilerlemesi', () => {
   it('kayit yokken bos', () => {
-    expect(loadJourney(createMemoryStore())).toEqual({ postcards: [] });
+    expect(loadJourney(createMemoryStore())).toEqual({ postcards: [], bestScores: {} });
   });
 
   it('kartpostal bir kez verilir ve kalici olur', () => {
@@ -208,10 +211,11 @@ describe('yolculuk ilerlemesi', () => {
   });
 
   it('bozuk kayit bos ilerleme sayilir', () => {
-    expect(loadJourney(createMemoryStore({ journey: '{bozuk' }))).toEqual({ postcards: [] });
-    expect(loadJourney(createMemoryStore({ journey: '{"postcards":"x"}' }))).toEqual({
+    expect(loadJourney(createMemoryStore({ journey: '{bozuk' }))).toEqual({
       postcards: [],
+      bestScores: {},
     });
+    expect(loadJourney(createMemoryStore({ journey: '{"postcards":"x"}' })).postcards).toEqual([]);
     expect(loadJourney(createMemoryStore({ journey: '{"postcards":["a",5]}' })).postcards).toEqual([
       'a',
     ]);
@@ -238,5 +242,53 @@ describe('omur boyu istatistik', () => {
     expect(stats.lines).toBe(7);
     expect(loadStats(createMemoryStore({ stats: '[1]' }))).toEqual(EMPTY_STATS);
     expect(loadStats(createMemoryStore({ stats: '{bozuk' }))).toEqual(EMPTY_STATS);
+  });
+});
+
+describe('semt rekoru', () => {
+  it('kartpostalla birlikte en iyi skor tutulur ve yalnizca asilinca guncellenir', () => {
+    const store = createMemoryStore();
+    awardPostcard(store, 'eminonu', 400);
+    awardPostcard(store, 'eminonu', 300);
+
+    expect(loadJourney(store).bestScores.eminonu).toBe(400);
+    expect(loadJourney(store).postcards).toEqual(['eminonu']);
+    awardPostcard(store, 'eminonu', 500);
+    expect(loadJourney(store).bestScores.eminonu).toBe(500);
+  });
+
+  it('bozuk skor alanlari atlanir', () => {
+    const store = createMemoryStore({ journey: '{"postcards":[],"bestScores":{"a":5,"b":"x"}}' });
+    expect(loadJourney(store).bestScores).toEqual({ a: 5 });
+  });
+});
+
+describe('Gunun Carsisi rekoru', () => {
+  const today = new Date(Date.UTC(2026, 8, 5, 12));
+  const tomorrow = new Date(Date.UTC(2026, 8, 6, 12));
+
+  it('gun anahtari UTC tarihidir', () => {
+    expect(dailyKey(today)).toBe('2026-09-05');
+  });
+
+  it('bugunun rekoru kaydedilir ve yalnizca asilinca guncellenir', () => {
+    const store = createMemoryStore();
+    recordDaily(store, today, 300);
+    recordDaily(store, today, 200);
+
+    expect(loadDaily(store, today)).toEqual({ date: '2026-09-05', best: 300 });
+  });
+
+  it('dunku kayit bugun gorunmez', () => {
+    const store = createMemoryStore();
+    recordDaily(store, today, 300);
+
+    expect(loadDaily(store, tomorrow)).toBeNull();
+  });
+
+  it('bozuk kayit null', () => {
+    expect(loadDaily(createMemoryStore({ daily: '{bozuk' }), today)).toBeNull();
+    expect(loadDaily(createMemoryStore({ daily: '{"date":5}' }), today)).toBeNull();
+    expect(loadDaily(createMemoryStore(), today)).toBeNull();
   });
 });

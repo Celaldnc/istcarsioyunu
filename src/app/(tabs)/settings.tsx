@@ -5,6 +5,7 @@ import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { linesToNextTitle, titleFor } from '@/game/core/titles';
 import { ESNAFLAR, isEsnafUnlocked } from '@/game/data/esnaflar';
+import { districtById } from '@/game/data/journey';
 import { useGameStore } from '@/game/store/gameStore';
 
 export default function SettingsScreen() {
@@ -88,7 +89,9 @@ export default function SettingsScreen() {
             <View style={styles.esnafBody}>
               <Text style={styles.esnafName}>{esnaf.name}</Text>
               <Text style={styles.esnafPerk}>
-                {unlocked ? esnaf.perkText : `${esnaf.unlockLevelId} kartpostalıyla açılır`}
+                {unlocked
+                  ? esnaf.perkText
+                  : `${districtById(esnaf.unlockLevelId ?? '')?.name ?? esnaf.unlockLevelId} kartpostalıyla açılır`}
               </Text>
             </View>
           </Pressable>

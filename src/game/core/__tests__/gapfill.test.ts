@@ -28,6 +28,9 @@ const LIVE_DEFAULTS = {
   curses: [],
   hagglesLeft: 0,
   progress: NO_PROGRESS,
+  gates: 0,
+  festivalTurns: 0,
+  catPets: 0,
   events: [],
   lastBonuses: [],
 };

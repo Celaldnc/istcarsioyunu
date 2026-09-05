@@ -10,7 +10,9 @@ import {
   placePiece,
 } from './board';
 import { petCat as pet, spawnCat, tickCat, withCatBlocked, type Cat } from './cat';
-import { eventRng, haggleRng } from './events';
+import { driftBoard, driftCurses } from './current';
+import { catRng, eventRng, haggleRng, pickOne } from './events';
+import { ALL_GATES, gatesLitBy } from './gates';
 import { feedsGull, gullDive, landGull, type Gull } from './gull';
 import { levelById, type Objective } from './levels';
 import { levelForScore } from './level';
@@ -20,10 +22,21 @@ import { createRng } from './rng';
 import { DEFAULT_ESNAF_ID, rulesFor, type GameMode, type GameRules } from './rules';
 import { computeScore } from './score';
 import { countSynergies } from './synergy';
-import { OFF_CELL } from './types';
+import { OFF_CELL, isFilledCell } from './types';
 import type { Board, FullLines, Piece, Point } from './types';
 
-import { GULL, HAGGLE, MAKAM, NAZAR, SCORING, SYNERGY, TEA_BREAK, TRAY } from '@/constants/config';
+import {
+  CAT,
+  GATES,
+  GULL,
+  HAGGLE,
+  MAKAM,
+  NAZAR,
+  SCORING,
+  SYNERGY,
+  TEA_BREAK,
+  TRAY,
+} from '@/constants/config';
 
 /**
  * Oyunun tum durumu ve gecisleri — SAF bir reducer olarak.
@@ -54,10 +67,14 @@ export type GameEvent =
   | 'bridge'
   | 'haggleWon'
   | 'haggleLost'
-  | 'levelWon';
+  | 'levelWon'
+  | 'catGift'
+  | 'gateLit'
+  | 'festival'
+  | 'current';
 
 export type BonusKind =
-  'cini' | 'perfectClear' | 'synergy' | 'nazar' | 'gullFed' | 'makam' | 'bridge';
+  'cini' | 'perfectClear' | 'synergy' | 'nazar' | 'gullFed' | 'makam' | 'bridge' | 'festival';
 
 export interface Bonus {
   readonly kind: BonusKind;
@@ -113,6 +130,12 @@ export interface GameState {
   readonly curses: readonly Curse[];
   readonly hagglesLeft: number;
   readonly progress: Progress;
+  /** Yanan kapilar (bit maskesi, bkz. core/gates.ts). */
+  readonly gates: number;
+  /** Kalan senlik hamlesi (puan x2). */
+  readonly festivalTurns: number;
+  /** Bu oyunda kedi kac kez oksandi (hediye sayaci). */
+  readonly catPets: number;
   /** Son gecisin olaylari; gecicidir. */
   readonly events: readonly GameEvent[];
   /** Son hamlenin bonus dokumu; gecicidir. */
@@ -221,6 +244,9 @@ export function startGame(seed: number, boardOrOptions: Board | StartOptions = {
     curses: [],
     hagglesLeft: rules.haggles,
     progress: NO_PROGRESS,
+    gates: 0,
+    festivalTurns: 0,
+    catPets: 0,
     events: [],
     lastBonuses: [],
   };
@@ -338,6 +364,29 @@ export function playPiece(state: GameState, trayIndex: number, origin: Point): G
     gull = null;
   }
 
+  // Senlik: tum kazanc katlanir.
+  if (state.festivalTurns > 0 && gain > 0) {
+    const extra = gain * (GATES.FESTIVAL_MULTIPLIER - 1);
+    bonuses.push({ kind: 'festival', points: extra });
+    gain += extra;
+  }
+
+  // Kapilar: kenar cizgisi temizlendiyse fener yanar; dordu yaninca senlik.
+  let gates = state.gates;
+  let festivalTurns = Math.max(0, state.festivalTurns - 1);
+  if (rules.gates && lineCount > 0) {
+    const lit = gatesLitBy(lines) & ~gates;
+    if (lit !== 0) {
+      gates |= lit;
+      events.push('gateLit');
+    }
+    if (gates === ALL_GATES) {
+      gates = 0;
+      festivalTurns = GATES.FESTIVAL_TURNS;
+      events.push('festival');
+    }
+  }
+
   const score = state.score + gain;
 
   let tray: readonly (Piece | undefined)[] = state.tray.map((slot, index) =>
@@ -381,7 +430,7 @@ export function playPiece(state: GameState, trayIndex: number, origin: Point): G
       gull = { ...gull, turnsLeft: gull.turnsLeft - 1 };
     }
   } else if (rules.gull && moves % rules.gullEvery === 0) {
-    gull = landGull(rng);
+    gull = landGull(rng, board);
     events.push('gullLanded');
   }
   curses = pruneCurses(curses, board);
@@ -389,6 +438,13 @@ export function playPiece(state: GameState, trayIndex: number, origin: Point): G
   const catTick = tickCat(state.cat, board, lines, rng);
   if (catTick.moved) {
     events.push('catMoved');
+  }
+
+  // Bogaz akintisi: satirlar kayar (kedinin satiri haric).
+  if (rules.current && moves % rules.currentEvery === 0) {
+    curses = driftCurses(curses, board, catTick.cat);
+    board = driftBoard(board, catTick.cat);
+    events.push('current');
   }
 
   const progress: Progress = {
@@ -419,6 +475,8 @@ export function playPiece(state: GameState, trayIndex: number, origin: Point): G
     gull,
     curses,
     progress,
+    gates,
+    festivalTurns,
     events,
     lastBonuses: bonuses,
   };
@@ -430,12 +488,53 @@ export function playPiece(state: GameState, trayIndex: number, origin: Point): G
   return next;
 }
 
-/** Kediyi oksar: CAT.REST_TURNS hamle yerinden kalkmaz. Hamle sayilmaz. */
+/**
+ * Kediyi oksar: CAT.REST_TURNS hamle yerinden kalkmaz. Hamle sayilmaz.
+ *
+ * Her CAT.GIFT_EVERY. oksamada Tekir "hediye" getirir: rastgele
+ * CAT.GIFT_CELLS dolu hucre bosalir (fare yakaladi, tezgahi temizledi).
+ * Boylece kedi yalnizca engel degil, bakilirsa yardimci da olur.
+ */
 export function petCat(state: GameState): GameState {
   if (state.status !== 'playing' || state.cat === null || state.cat.restTurns > 0) {
     return state;
   }
-  return { ...state, cat: pet(state.cat), events: ['catPetted'], lastBonuses: [] };
+  const catPets = state.catPets + 1;
+  const events: GameEvent[] = ['catPetted'];
+  let board = state.board;
+
+  if (catPets % CAT.GIFT_EVERY === 0) {
+    const rng = catRng(state.seed, catPets);
+    const filled = board.flatMap((row, y) =>
+      row.flatMap((cell, x) => (isFilledCell(cell) ? [{ x, y }] : [])),
+    );
+    const targets: Point[] = [];
+    for (let i = 0; i < CAT.GIFT_CELLS && filled.length > 0; i += 1) {
+      const target = pickOne(rng, filled);
+      if (target === undefined) {
+        break;
+      }
+      targets.push(target);
+      filled.splice(filled.indexOf(target), 1);
+    }
+    if (targets.length > 0) {
+      board = board.map((row, y) =>
+        row.map((cell, x) => (targets.some((t) => t.x === x && t.y === y) ? null : cell)),
+      );
+      events.push('catGift');
+    }
+  }
+
+  return {
+    ...state,
+    board,
+    cat: pet(state.cat),
+    catPets,
+    curses: pruneCurses(state.curses, board),
+    status: resolveStatus(board, state.tray, state.cat),
+    events,
+    lastBonuses: [],
+  };
 }
 
 /**

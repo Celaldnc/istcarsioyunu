@@ -59,6 +59,7 @@ export default function HomeScreen() {
   const stats = useGameStore((state) => state.stats);
   const postcards = useGameStore((state) => state.postcards);
   const esnafId = useGameStore((state) => state.selectedEsnafId);
+  const daily = useGameStore((state) => state.daily);
   const newGame = useGameStore((state) => state.newGame);
 
   const start = useCallback(
@@ -116,7 +117,11 @@ export default function HomeScreen() {
           style={[styles.card, { backgroundColor: surface }]}
         >
           <Text style={styles.cardTitle}>{`${card.emoji} ${card.title}`}</Text>
-          <Text style={styles.cardText}>{card.text}</Text>
+          <Text style={styles.cardText}>
+            {card.mode === 'daily' && daily !== null
+              ? `${card.text} Bugünkü rekorun: ${daily.best}`
+              : card.text}
+          </Text>
         </Pressable>
       ))}
 

@@ -91,3 +91,30 @@ describe('EntityOverlay', () => {
     );
   });
 });
+
+describe('kapilar ve senlik', () => {
+  it('kapi kurali acikken dort fener cizilir', async () => {
+    await render(
+      <EntityOverlay cat={null} gull={null} curses={[]} gates={0} layout={layout} theme={CARSI} />,
+    );
+
+    // fener + parlama = her fener 2 daire; yanan fenerde ek hale
+    expect(screen.getAllByTestId('skia-circle')).toHaveLength(8);
+  });
+
+  it('yanan fener hale alir', async () => {
+    await render(
+      <EntityOverlay cat={null} gull={null} curses={[]} gates={1} layout={layout} theme={CARSI} />,
+    );
+
+    expect(screen.getAllByTestId('skia-circle')).toHaveLength(9);
+  });
+
+  it('senlikte tahta isikla yikanir', async () => {
+    await render(
+      <EntityOverlay cat={null} gull={null} curses={[]} festival layout={layout} theme={CARSI} />,
+    );
+
+    expect(screen.getAllByTestId('skia-rounded-rect')).toHaveLength(1);
+  });
+});

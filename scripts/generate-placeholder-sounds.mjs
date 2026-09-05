@@ -104,6 +104,12 @@ const SOUNDS = {
   // Pazarlik kazanildi / kaybedildi
   haggleWin: tone([660, 880, 1100], 0.35),
   haggleLose: tone([300, 220], 0.3),
+  // Fener yandi: kisa, sicak tik
+  lantern: tone([988, 1319], 0.18),
+  // Senlik: davul-zurna izlenimi, hizli yukselen dortlu
+  festival: tone([523, 659, 784, 1047, 784, 1047], 0.6),
+  // Akinti: alcak, kayan dalga
+  current: tone([260, 220, 190], 0.45),
   // Makam notalari: Nihavend (armonik minor) dizisi, D4'ten baslar.
   // Seri uzadikca bir sonraki nota calar; 8'de "makam tamamlanir".
   ...Object.fromEntries(

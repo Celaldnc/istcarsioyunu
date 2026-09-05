@@ -2,15 +2,19 @@ import { create } from 'zustand';
 
 import {
   awardPostcard,
+  loadDaily,
   loadGame,
   loadHighScore,
   loadJourney,
   loadSettings,
   loadStats,
+  recordDaily,
   recordScore,
   saveGame,
   saveSettings,
   saveStats,
+  type DailyRecord,
+  type JourneyProgress,
   type Settings,
 } from './persistence';
 import { getAppStore } from './storage';
@@ -71,6 +75,10 @@ export interface GameStore extends GameState {
   readonly esnaf: EsnafMessage | null;
   /** Kazanilan kartpostallar (semt kimlikleri). */
   readonly postcards: readonly string[];
+  /** Semt basina en iyi skor. */
+  readonly journeyBest: JourneyProgress['bestScores'];
+  /** Bugunun Gunun Carsisi rekoru; yoksa null. */
+  readonly daily: DailyRecord | null;
   /** Omur boyu istatistik (unvan bundan turetilir). */
   readonly stats: LifetimeStats;
 
@@ -146,11 +154,21 @@ export const useGameStore = create<GameStore>((set, get) => {
   const finishGame = (next: GameState) => {
     const stats = addGameToStats(get().stats, { score: next.score, ...next.progress });
     saveStats(storage, stats);
-    const postcards =
-      next.status === 'won' && next.levelId !== null
-        ? awardPostcard(storage, next.levelId).postcards
-        : get().postcards;
-    return { highScore: recordScore(storage, next.score), stats, postcards };
+
+    // Rekorlar MOD BASINA: klasik/canli genel rekoru, gunluk mod bugunun
+    // rekorunu, yolculuk semt rekorunu gunceller. Aksi halde 300 puanlik bir
+    // semt hedefi "En iyi" rozetini kirletirdi.
+    if (next.mode === 'journey') {
+      const journey =
+        next.status === 'won' && next.levelId !== null
+          ? awardPostcard(storage, next.levelId, next.score)
+          : loadJourney(storage);
+      return { stats, postcards: journey.postcards, journeyBest: journey.bestScores };
+    }
+    if (next.mode === 'daily') {
+      return { stats, daily: recordDaily(storage, new Date(), next.score) };
+    }
+    return { stats, highScore: recordScore(storage, next.score) };
   };
 
   return {
@@ -161,6 +179,8 @@ export const useGameStore = create<GameStore>((set, get) => {
     selectedEsnafId: settings.esnafId,
     esnaf: speak(greetingForPhase(dayPhaseAt(new Date())), Date.now()),
     postcards: loadJourney(storage).postcards,
+    journeyBest: loadJourney(storage).bestScores,
+    daily: loadDaily(storage, new Date()),
     stats: loadStats(storage),
 
     newGame: (seed, options = {}) => {

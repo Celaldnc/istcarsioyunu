@@ -83,6 +83,22 @@ export const ROLES = {
 export const CAT = {
   /** Oksanan kedi kac hamle yerinden kalkmaz. */
   REST_TURNS: 3,
+  /** Her kacinci oksamada Tekir hediye getirir (fare!). */
+  GIFT_EVERY: 3,
+  /** Hediye: kac dolu hucre bosalir. */
+  GIFT_CELLS: 3,
+} as const;
+
+export const GATES = {
+  /** Dort kapi da yandiginda senlik kac hamle surer. */
+  FESTIVAL_TURNS: 3,
+  /** Senlikte puan carpani. */
+  FESTIVAL_MULTIPLIER: 2,
+} as const;
+
+export const CURRENT = {
+  /** Bogaz akintisi: kac hamlede bir satirlar bir hucre kayar. */
+  EVERY: 5,
 } as const;
 
 export const GULL = {

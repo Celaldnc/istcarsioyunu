@@ -1,4 +1,4 @@
-import { HAGGLE, ROLES, TEA_BREAK } from '@/constants/config';
+import { CURRENT, HAGGLE, ROLES, TEA_BREAK } from '@/constants/config';
 
 /**
  * Oyun kurallari — hangi "canli" ogelerin acik oldugu ve esnaf perk'leri.
@@ -35,6 +35,14 @@ export interface GameRules {
   readonly makam: boolean;
   /** Bogaz tahtasi: su seridini asan satir "Kopru" bonusu verir. */
   readonly bridge: boolean;
+  /**
+   * Kapalicarsi kapilari: kenar cizgileri (ust/alt/sol/sag) temizlenince
+   * o kapinin feneri yanar; dordu de yaninca "Carsi Senligi" (puan x2).
+   */
+  readonly gates: boolean;
+  /** Bogaz akintisi: satirlar duzenli olarak bir hucre kayar. */
+  readonly current: boolean;
+  readonly currentEvery: number;
 }
 
 /** Saf Block Blast: hicbir canli oge yok. */
@@ -51,6 +59,9 @@ export const CLASSIC_RULES: GameRules = {
   haggles: 0,
   makam: true,
   bridge: false,
+  gates: false,
+  current: false,
+  currentEvery: CURRENT.EVERY,
 };
 
 /** "Canli Carsi": her sey acik. */
@@ -61,6 +72,7 @@ export const CANLI_RULES: GameRules = {
   nazar: true,
   synergies: true,
   haggles: HAGGLE.PER_GAME,
+  gates: true,
 };
 
 /**

@@ -46,7 +46,7 @@ function RootLayoutNav() {
           <Stack.Screen name="game" options={{ title: 'Çarşı', headerBackTitle: 'Geri' }} />
           <Stack.Screen name="journey" options={{ title: 'İstanbul Yolculuğu' }} />
           {/* title verilmezse header rota adini ("modal") gosterir. */}
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Hakkında' }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Nasıl oynanır?' }} />
         </Stack>
       </ThemeProvider>
     </GestureHandlerRootView>

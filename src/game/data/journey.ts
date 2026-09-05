@@ -46,6 +46,13 @@ export const DISTRICTS: readonly District[] = [
     color: '#4E8A3C',
   },
   {
+    id: 'uskudar',
+    name: 'Üsküdar',
+    subtitle: 'Vapur iskelesi, Boğaz akıntısı',
+    emoji: '⛵',
+    color: '#2F6F8F',
+  },
+  {
     id: 'kadikoy',
     name: 'Kadıköy',
     subtitle: 'Kediler, sokaklar, nazar',

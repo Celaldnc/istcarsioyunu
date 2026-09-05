@@ -60,7 +60,11 @@ export const LEVELS: readonly LevelSpec[] = [
     objective: { kind: 'synergy', target: 3 },
     overrides: { synergies: true },
   },
-  { id: 'kapalicarsi', objective: { kind: 'cini', target: 3 }, overrides: { synergies: true } },
+  {
+    id: 'kapalicarsi',
+    objective: { kind: 'cini', target: 3 },
+    overrides: { synergies: true, gates: true },
+  },
   { id: 'galata', mask: GALATA, objective: { kind: 'lines', target: 12 } },
   {
     id: 'bogaz',
@@ -75,9 +79,15 @@ export const LEVELS: readonly LevelSpec[] = [
     overrides: { gull: true, gullEvery: 8 },
   },
   {
+    id: 'uskudar',
+    objective: { kind: 'lines', target: 15 },
+    // Vapur iskelesi: akinti tahtayi kaydirir, plan sik sik bozulur.
+    overrides: { current: true },
+  },
+  {
     id: 'kadikoy',
     objective: { kind: 'lines', target: 25 },
-    overrides: { cat: true, nazar: true, synergies: true },
+    overrides: { cat: true, nazar: true, synergies: true, gates: true },
   },
 ];
 

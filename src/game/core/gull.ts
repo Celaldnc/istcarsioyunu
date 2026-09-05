@@ -1,6 +1,6 @@
 import { pickOne } from './events';
 import type { Rng } from './rng';
-import { isFilledCell } from './types';
+import { isFilledCell, isOffCell } from './types';
 import type { Board, Piece, Point } from './types';
 
 import { BOARD, GULL, ROLES } from '@/constants/config';
@@ -18,12 +18,15 @@ export interface Gull {
   readonly turnsLeft: number;
 }
 
-export function landGull(rng: Rng): Gull {
-  const col =
-    pickOne(
-      rng,
-      Array.from({ length: BOARD.COLS }, (_, x) => x),
-    ) ?? 0;
+/**
+ * Marti bir sutuna konar. Sekilli tahtada tamamen su/tahta disi olan sutuna
+ * konmaz (orada calacak bir sey de, simit atacak yer de yoktur).
+ */
+export function landGull(rng: Rng, board?: Board): Gull {
+  const columns = Array.from({ length: BOARD.COLS }, (_, x) => x).filter(
+    (x) => board === undefined || board.some((row) => !isOffCell(row[x])),
+  );
+  const col = pickOne(rng, columns.length > 0 ? columns : [0]) ?? 0;
   return { col, turnsLeft: GULL.PERCH_TURNS };
 }
 

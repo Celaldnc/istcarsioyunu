@@ -14,6 +14,7 @@ export default function JourneyScreen() {
   const surface = useThemeColor({}, 'surface');
   const accent = useThemeColor({}, 'accent');
   const postcards = useGameStore((state) => state.postcards);
+  const journeyBest = useGameStore((state) => state.journeyBest);
   const newGame = useGameStore((state) => state.newGame);
 
   const start = useCallback(
@@ -56,6 +57,9 @@ export default function JourneyScreen() {
               <Text style={styles.cardTitle}>{`${index + 1}. ${district?.name ?? level.id}`}</Text>
               <Text style={styles.cardText}>{district?.subtitle ?? ''}</Text>
               <Text style={styles.cardText}>{`🎯 ${objectiveText(level.objective)}`}</Text>
+              {journeyBest[level.id] !== undefined ? (
+                <Text style={styles.cardText}>{`🏆 En iyi: ${journeyBest[level.id]}`}</Text>
+              ) : null}
             </View>
             {done ? <Text style={[styles.done, { color: accent }]}>✔</Text> : null}
           </Pressable>

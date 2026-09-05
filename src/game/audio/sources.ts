@@ -31,6 +31,9 @@ export const SOUND_NAMES = [
   'synergy',
   'haggleWin',
   'haggleLose',
+  'lantern',
+  'festival',
+  'current',
   ...NOTE_NAMES,
 ] as const;
 
@@ -60,6 +63,9 @@ export const SOUND_SOURCES: Readonly<Record<SoundName, unknown>> = {
   synergy: require('../../../assets/sounds/synergy.wav'),
   haggleWin: require('../../../assets/sounds/haggleWin.wav'),
   haggleLose: require('../../../assets/sounds/haggleLose.wav'),
+  lantern: require('../../../assets/sounds/lantern.wav'),
+  festival: require('../../../assets/sounds/festival.wav'),
+  current: require('../../../assets/sounds/current.wav'),
   note1: require('../../../assets/sounds/note1.wav'),
   note2: require('../../../assets/sounds/note2.wav'),
   note3: require('../../../assets/sounds/note3.wav'),

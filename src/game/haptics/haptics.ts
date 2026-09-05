@@ -44,6 +44,9 @@ const PATTERN: Readonly<Partial<Record<SoundName, HapticKind | null>>> = {
   synergy: 'heavy',
   haggleWin: 'success',
   haggleLose: 'error',
+  lantern: 'light',
+  festival: 'success',
+  current: 'medium',
 };
 
 export function hapticFor(cue: SoundName): HapticKind | null {

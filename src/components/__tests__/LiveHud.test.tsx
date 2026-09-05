@@ -86,3 +86,75 @@ describe('LiveHud', () => {
     expect(onHaggle).toHaveBeenCalled();
   });
 });
+
+describe('kapilar, senlik ve kedi', () => {
+  it('yanan kapi sayisini gosterir', async () => {
+    await render(
+      <LiveHud
+        levelId={null}
+        score={0}
+        progress={NO_PROGRESS}
+        gull={null}
+        hagglesLeft={0}
+        onHaggle={jest.fn()}
+        gates={5}
+      />,
+    );
+
+    expect(screen.getByText('🏮 2/4')).toBeOnTheScreen();
+  });
+
+  it('senlik suruyorsa kapi yerine senlik gosterir', async () => {
+    await render(
+      <LiveHud
+        levelId={null}
+        score={0}
+        progress={NO_PROGRESS}
+        gull={null}
+        hagglesLeft={0}
+        onHaggle={jest.fn()}
+        gates={0}
+        festivalTurns={2}
+      />,
+    );
+
+    expect(screen.getByText(/Şenlik ×2 \(2\)/)).toBeOnTheScreen();
+    expect(screen.queryByText(/🏮/)).toBeNull();
+  });
+
+  it('dinlenmeyen kedi icin oksa dugmesi', async () => {
+    const onPet = jest.fn();
+    await render(
+      <LiveHud
+        levelId={null}
+        score={0}
+        progress={NO_PROGRESS}
+        gull={null}
+        hagglesLeft={0}
+        onHaggle={jest.fn()}
+        cat={{ x: 0, y: 0, restTurns: 0 }}
+        onPet={onPet}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Tekir'i okşa"));
+    expect(onPet).toHaveBeenCalled();
+  });
+
+  it('dinlenen kedi icin dugme yoktur', async () => {
+    await render(
+      <LiveHud
+        levelId={null}
+        score={0}
+        progress={NO_PROGRESS}
+        gull={null}
+        hagglesLeft={0}
+        onHaggle={jest.fn()}
+        cat={{ x: 0, y: 0, restTurns: 2 }}
+        onPet={jest.fn()}
+      />,
+    );
+
+    expect(screen.queryByLabelText("Tekir'i okşa")).toBeNull();
+  });
+});

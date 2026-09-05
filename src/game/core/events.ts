@@ -15,6 +15,7 @@ import { createRng, type Rng } from './rng';
 
 const EVENT_SALT = 0x5bd1e995;
 const HAGGLE_SALT = 0x1b873593;
+const CAT_SALT = 0x27d4eb2f;
 
 /** Verilen hamle icin olay ureteci. */
 export function eventRng(seed: number, move: number): Rng {
@@ -24,6 +25,11 @@ export function eventRng(seed: number, move: number): Rng {
 /** n. pazarlik icin uretec (parca akisindan bagimsiz). */
 export function haggleRng(seed: number, haggleIndex: number): Rng {
   return createRng((seed ^ HAGGLE_SALT) >>> 0, haggleIndex);
+}
+
+/** n. kedi hediyesi icin uretec. */
+export function catRng(seed: number, giftIndex: number): Rng {
+  return createRng((seed ^ CAT_SALT) >>> 0, giftIndex);
 }
 
 /** Listeden rastgele eleman; bos listede undefined. */

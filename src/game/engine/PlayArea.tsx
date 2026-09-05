@@ -46,6 +46,10 @@ interface PlayAreaProps {
   readonly cat?: Cat | null;
   readonly gull?: Gull | null;
   readonly curses?: readonly Curse[];
+  /** Yanan kapilar (bit maskesi); null ise kapi kurali kapali. */
+  readonly gates?: number | null;
+  /** Senlik suruyor mu (tahta isiklanir). */
+  readonly festival?: boolean;
   /** Gecerli bir birakma oldugunda cagrilir. */
   readonly onDrop: (trayIndex: number, origin: Point) => void;
   /** Kedinin hucresine dokunulunca cagrilir. */
@@ -79,6 +83,8 @@ export function PlayArea({
   cat = null,
   gull = null,
   curses = [],
+  gates = null,
+  festival = false,
   onDrop,
   onPet,
 }: PlayAreaProps) {
@@ -206,7 +212,15 @@ export function PlayArea({
       <View style={[styles.container, { width }]}>
         <GameCanvas board={board} layout={boardLayout} theme={theme} />
 
-        <EntityOverlay cat={cat} gull={gull} curses={curses} layout={boardLayout} theme={theme} />
+        <EntityOverlay
+          cat={cat}
+          gull={gull}
+          curses={curses}
+          gates={gates}
+          festival={festival}
+          layout={boardLayout}
+          theme={theme}
+        />
 
         {burst !== undefined ? (
           <ClearBurst lines={burst.lines} token={burst.token} layout={boardLayout} theme={theme} />

@@ -22,6 +22,9 @@ const LIVE_DEFAULTS = {
   curses: [],
   hagglesLeft: 0,
   progress: NO_PROGRESS,
+  gates: 0,
+  festivalTurns: 0,
+  catPets: 0,
   events: [],
   lastBonuses: [],
 };
@@ -387,5 +390,52 @@ describe('oyun sonu istatistik ve kartpostal', () => {
     expect(useGameStore.getState().status).toBe('won');
     expect(useGameStore.getState().postcards).toContain('eminonu');
     expect(useGameStore.getState().esnaf?.event).toBe('levelWon');
+  });
+});
+
+describe('mod basina rekor', () => {
+  const deadWithGap = () => {
+    const diagonal = Array.from({ length: BOARD.ROWS }, (_, y) => [y % BOARD.COLS, y] as const);
+    const empties = [...diagonal, [5, 0] as const];
+    return Array.from({ length: BOARD.ROWS }, (_, y) =>
+      Array.from({ length: BOARD.COLS }, (_, x) =>
+        empties.some(([ex, ey]) => ex === x && ey === y) ? null : 1,
+      ),
+    );
+  };
+  const finishWith = (score: number) => {
+    const dot = shapeById('dot')!;
+    const plus = shapeById('plus')!;
+    useGameStore.setState({
+      board: deadWithGap(),
+      tray: [
+        { shape: dot, colorId: 1 },
+        { shape: plus, colorId: 1 },
+        { shape: plus, colorId: 1 },
+      ],
+      score,
+      status: 'playing',
+    });
+    useGameStore.getState().play(0, { x: 5, y: 0 });
+  };
+
+  it('gunluk mod genel rekoru degil bugunun rekorunu gunceller', () => {
+    useGameStore.getState().newGame(SEED, { mode: 'daily' });
+    const before = useGameStore.getState().highScore;
+
+    finishWith(before + 5000);
+
+    expect(useGameStore.getState().status).toBe('gameOver');
+    expect(useGameStore.getState().highScore).toBe(before);
+    expect(useGameStore.getState().daily?.best).toBe(before + 5000);
+  });
+
+  it('yolculuk kaybi genel rekora dokunmaz', () => {
+    useGameStore.getState().newGame(SEED, { mode: 'journey', levelId: 'galata' });
+    const before = useGameStore.getState().highScore;
+
+    finishWith(before + 5000);
+
+    expect(useGameStore.getState().highScore).toBe(before);
   });
 });

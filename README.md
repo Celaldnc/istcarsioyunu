@@ -145,6 +145,10 @@ Tahta ölü bir ızgara değil, yaşayan bir yer. Klasik mod saf Block Blast; **
 | **Pazarlık** 🤝             | Oyun başına 3 hak: yuva seç, kayan ibreyi yeşilde durdur. Tutturursan parça bedava değişir, kaçırırsan -30                            | `core/game.ts haggle`               |
 | **Esnaf seçimi**            | Çırak (perk yok), Simitçi (3 kolay tepsi), Çaycı (2 çay molası), Halıcı (Çini ×2), Balıkçı (sık martı, simit ×2). Kartpostalla açılır | `core/rules.ts`, `data/esnaflar.ts` |
 | **İstanbul Yolculuğu** 🗺️   | 7 semt, hedefli seviyeler, **şekilli tahtalar** (Galata silueti, Kız Kulesi, Boğaz). Boğaz'da su şeridini aşan satır = **Köprü** +50  | `core/levels.ts`, `data/journey.ts` |
+| **Kapılar / Şenlik** 🏮     | Kenar çizgileri (üst/alt/sol/sağ) temizlenince fener yanar; dördü yanınca **Çarşı Şenliği**: 3 hamle puan ×2                          | `core/gates.ts`                     |
+| **Boğaz akıntısı** ⛵       | Üsküdar semtinde her 5 hamlede satırlar bir hücre kayar (su şeridi sabit, Tekir'in satırı kaymaz)                                     | `core/current.ts`                   |
+| **Tekir hediyesi**          | Her 3. okşamada kedi 3 rastgele dolu hücreyi boşaltır — kedi engel değil, bakılırsa yardımcı                                          | `core/game.ts petCat`               |
+| **Mod başına rekor**        | Klasik/Canlı genel rekor; Günün Çarşısı bugünün rekoru; Yolculuk semt rekoru. Hedefli seviyeler genel rekoru kirletmez                | `store/persistence.ts`              |
 | **Bir Gün İstanbul** 🌅     | Tahta zemini telefonun saatine göre (sabah/gün/akşam/gece); esnaf saate göre karşılar                                                 | `data/dayCycle.ts`                  |
 | **Unvanlar**                | Ömür boyu temizlenen çizgi: Çırak → Kalfa (100) → Usta (500) → Hacı (2000). Oyun sonu özetinde                                        | `core/titles.ts`                    |
 | **Kartpostal paylaşımı** 📮 | Oyun sonunda skor + unvan + İstanbul silueti kartı; view-shot + expo-sharing (web: navigator.share)                                   | `components/PostcardCard.tsx`       |

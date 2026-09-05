@@ -21,6 +21,7 @@ const KEYS = {
   settings: 'settings',
   journey: 'journey',
   stats: 'stats',
+  daily: 'daily',
 } as const;
 
 export interface Settings {
@@ -105,9 +106,24 @@ export function saveSettings(store: KeyValueStore, settings: Settings): void {
 export interface JourneyProgress {
   /** Kazanilan kartpostallarin semt kimlikleri. */
   readonly postcards: readonly string[];
+  /** Semt basina en iyi skor. */
+  readonly bestScores: Readonly<Record<string, number>>;
 }
 
-export const EMPTY_JOURNEY: JourneyProgress = { postcards: [] };
+export const EMPTY_JOURNEY: JourneyProgress = { postcards: [], bestScores: {} };
+
+function parseBestScores(value: unknown): Record<string, number> {
+  if (typeof value !== 'object' || value === null) {
+    return {};
+  }
+  const out: Record<string, number> = {};
+  for (const [key, n] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof n === 'number' && Number.isFinite(n) && n >= 0) {
+      out[key] = n;
+    }
+  }
+  return out;
+}
 
 export function loadJourney(store: KeyValueStore): JourneyProgress {
   const raw = store.getString(KEYS.journey);
@@ -119,24 +135,76 @@ export function loadJourney(store: KeyValueStore): JourneyProgress {
     if (typeof parsed !== 'object' || parsed === null) {
       return EMPTY_JOURNEY;
     }
-    const { postcards } = parsed as Partial<JourneyProgress>;
-    if (!Array.isArray(postcards)) {
-      return EMPTY_JOURNEY;
-    }
-    return { postcards: postcards.filter((id): id is string => typeof id === 'string') };
+    const { postcards, bestScores } = parsed as Partial<JourneyProgress>;
+    return {
+      postcards: Array.isArray(postcards)
+        ? postcards.filter((id): id is string => typeof id === 'string')
+        : [],
+      bestScores: parseBestScores(bestScores),
+    };
   } catch {
     return EMPTY_JOURNEY;
   }
 }
 
-/** Kartpostali ekler (tekrar vermez) ve guncel ilerlemeyi dondurur. */
-export function awardPostcard(store: KeyValueStore, levelId: string): JourneyProgress {
+/** Kartpostali ekler (tekrar vermez), semt rekorunu gunceller. */
+export function awardPostcard(store: KeyValueStore, levelId: string, score = 0): JourneyProgress {
   const current = loadJourney(store);
-  if (current.postcards.includes(levelId)) {
+  const best = current.bestScores[levelId] ?? 0;
+  const next: JourneyProgress = {
+    postcards: current.postcards.includes(levelId)
+      ? current.postcards
+      : [...current.postcards, levelId],
+    bestScores: score > best ? { ...current.bestScores, [levelId]: score } : current.bestScores,
+  };
+  store.set(KEYS.journey, JSON.stringify(next));
+  return next;
+}
+
+// --- Gunun Carsisi: bugunun en iyisi ---------------------------------------
+
+export interface DailyRecord {
+  /** YYYY-MM-DD (UTC; seed ile ayni takvim). */
+  readonly date: string;
+  readonly best: number;
+}
+
+/** UTC gun anahtari: seedFromDate ile ayni gunu paylasir. */
+export function dailyKey(date: Date): string {
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${date.getUTCFullYear()}-${m}-${d}`;
+}
+
+export function loadDaily(store: KeyValueStore, today: Date): DailyRecord | null {
+  const raw = store.getString(KEYS.daily);
+  if (raw === undefined) {
+    return null;
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) {
+      return null;
+    }
+    const { date, best } = parsed as Partial<DailyRecord>;
+    if (typeof date !== 'string' || typeof best !== 'number' || !Number.isFinite(best)) {
+      return null;
+    }
+    // Dunku kayit bugun anlamsiz; sessizce yok sayilir.
+    return date === dailyKey(today) ? { date, best } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Bugunun en iyisini yalnizca asildiysa gunceller; guncel kaydi dondurur. */
+export function recordDaily(store: KeyValueStore, today: Date, score: number): DailyRecord {
+  const current = loadDaily(store, today);
+  if (current !== null && score <= current.best) {
     return current;
   }
-  const next = { postcards: [...current.postcards, levelId] };
-  store.set(KEYS.journey, JSON.stringify(next));
+  const next = { date: dailyKey(today), best: score };
+  store.set(KEYS.daily, JSON.stringify(next));
   return next;
 }
 

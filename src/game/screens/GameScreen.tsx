@@ -73,6 +73,11 @@ export default function GameScreen({ onExit }: GameScreenProps) {
   const curses = useGameStore((state) => state.curses);
   const hagglesLeft = useGameStore((state) => state.hagglesLeft);
   const levelId = useGameStore((state) => state.levelId);
+  const mode = useGameStore((state) => state.mode);
+  const gates = useGameStore((state) => state.gates);
+  const festivalTurns = useGameStore((state) => state.festivalTurns);
+  const rules = useGameStore((state) => state.rules);
+  const daily = useGameStore((state) => state.daily);
   const progress = useGameStore((state) => state.progress);
   const stats = useGameStore((state) => state.stats);
   const persistNow = useGameStore((state) => state.persistNow);
@@ -123,33 +128,39 @@ export default function GameScreen({ onExit }: GameScreenProps) {
   const lineCount = lastClear.rows.length + lastClear.cols.length;
   const ciniCount = lastCini.rows.length + lastCini.cols.length;
   const bonusLabel =
-    lastBonuses.find((b) => b.kind === 'makam') !== undefined
-      ? 'Makam!'
-      : lastBonuses.find((b) => b.kind === 'bridge') !== undefined
-        ? 'Köprü!'
-        : lastBonuses.find((b) => b.kind === 'synergy') !== undefined
-          ? 'Sinerji!'
-          : lastBonuses.find((b) => b.kind === 'gullFed') !== undefined
-            ? 'Simit!'
-            : lastBonuses.find((b) => b.kind === 'nazar') !== undefined
-              ? 'Nazar bozuldu!'
-              : ciniCount > 0
-                ? 'Çini!'
-                : lineCount >= 2
-                  ? 'Combo!'
-                  : undefined;
+    lastBonuses.find((b) => b.kind === 'festival') !== undefined
+      ? 'Şenlik ×2!'
+      : lastBonuses.find((b) => b.kind === 'makam') !== undefined
+        ? 'Makam!'
+        : lastBonuses.find((b) => b.kind === 'bridge') !== undefined
+          ? 'Köprü!'
+          : lastBonuses.find((b) => b.kind === 'synergy') !== undefined
+            ? 'Sinerji!'
+            : lastBonuses.find((b) => b.kind === 'gullFed') !== undefined
+              ? 'Simit!'
+              : lastBonuses.find((b) => b.kind === 'nazar') !== undefined
+                ? 'Nazar bozuldu!'
+                : ciniCount > 0
+                  ? 'Çini!'
+                  : lineCount >= 2
+                    ? 'Combo!'
+                    : undefined;
 
   const district = levelId === null ? undefined : districtById(levelId);
   const next = levelId === null ? undefined : nextLevelId(levelId);
   const title = titleFor(stats);
   const finished = status !== 'playing';
+  // Genel rekor yalnizca klasik/canli icin anlamli; gunluk modda bugunun
+  // rekoru, yolculukta semt hedefi gosterilir.
+  const showsRecord = mode === 'classic' || mode === 'canli';
+  const bestLabel = mode === 'daily' && daily !== null ? daily.best : highScore;
   const {
     ref: postcardRef,
     share: sharePostcardNow,
     outcome: shareOutcome,
     busy: shareBusy,
   } = usePostcardShare('İstanbul Çarşı Blok kartpostalı');
-  const isRecord = highScore > 0 && score >= highScore;
+  const isRecord = showsRecord && highScore > 0 && score >= highScore;
 
   return (
     <View style={styles.container}>
@@ -159,10 +170,13 @@ export default function GameScreen({ onExit }: GameScreenProps) {
           <FloatingGain gain={lastGain} token={moveToken} label={bonusLabel} />
         </View>
         <ScoreBadge score={levelForScore(score)} label="Seviye" />
-        {highScore > 0 ? <ScoreBadge score={highScore} label="En iyi" /> : null}
+        {showsRecord && highScore > 0 ? <ScoreBadge score={highScore} label="En iyi" /> : null}
+        {mode === 'daily' && daily !== null ? (
+          <ScoreBadge score={bestLabel} label="Bugün en iyi" />
+        ) : null}
       </View>
 
-      <RecordBar score={score} highScore={highScore} />
+      {showsRecord ? <RecordBar score={score} highScore={highScore} /> : null}
 
       <LiveHud
         levelId={levelId}
@@ -171,6 +185,10 @@ export default function GameScreen({ onExit }: GameScreenProps) {
         gull={gull}
         hagglesLeft={status === 'playing' ? hagglesLeft : 0}
         onHaggle={openHaggle}
+        gates={rules.gates ? gates : null}
+        festivalTurns={festivalTurns}
+        cat={status === 'playing' ? cat : null}
+        onPet={pet}
       />
 
       {/* Seri ancak gercekten zincir kurulunca gosterilir; tek temizlemede
@@ -207,6 +225,8 @@ export default function GameScreen({ onExit }: GameScreenProps) {
           cat={cat}
           gull={gull}
           curses={curses}
+          gates={rules.gates ? gates : null}
+          festival={festivalTurns > 0}
           onDrop={handleDrop}
           onPet={pet}
         />

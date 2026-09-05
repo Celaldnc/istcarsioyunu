@@ -20,6 +20,7 @@ import {
 
 import { BOARD } from '@/constants/config';
 import type { Cat, Curse, Gull } from '@/game/core/game';
+import { GATE, isGateLit } from '@/game/core/gates';
 import { cellOrigin, type BoardLayout } from '@/game/core/layout';
 import type { Theme } from '@/game/data/themes';
 
@@ -29,9 +30,15 @@ interface EntityOverlayProps {
   readonly cat: Cat | null;
   readonly gull: Gull | null;
   readonly curses: readonly Curse[];
+  /** Yanan kapilar; null ise fenerler cizilmez. */
+  readonly gates?: number | null;
+  /** Senlik: tahta sicak bir isikla yikanir. */
+  readonly festival?: boolean;
   readonly layout: BoardLayout;
   readonly theme: Theme;
 }
+
+const LANTERN = { lit: '#FFB63A', unlit: '#8A8A8A', glow: '#FFD580', festival: '#FFC857' } as const;
 
 const CAT_COLORS = { fur: '#6B6B6B', ear: '#F2B8A2', eye: '#2B2B2B', nose: '#D97B7B' } as const;
 const GULL_COLORS = { body: '#F7F7F7', wing: '#9AA3AD', beak: '#F2A33A', eye: '#222222' } as const;
@@ -45,7 +52,15 @@ const CURSE_COLORS = { veil: '#1B1B2F', iris: '#5FB3E6', pupil: '#0B0B14' } as c
  * cizdirmemeli. Dokunuslari yutmaz (pointerEvents none): oksama PlayArea'daki
  * tap hareketiyle, koordinattan cozulur.
  */
-function EntityOverlayImpl({ cat, gull, curses, layout, theme }: EntityOverlayProps) {
+function EntityOverlayImpl({
+  cat,
+  gull,
+  curses,
+  gates = null,
+  festival = false,
+  layout,
+  theme,
+}: EntityOverlayProps) {
   // Lanetin nabzi: tum lanetler ayni ritimde soluk alir (tek shared value).
   const pulse = useSharedValue(0);
   useEffect(() => {
@@ -57,7 +72,7 @@ function EntityOverlayImpl({ cat, gull, curses, layout, theme }: EntityOverlayPr
   }, [pulse]);
   const veilOpacity = useDerivedValue(() => 0.45 + pulse.value * 0.25);
 
-  if (cat === null && gull === null && curses.length === 0) {
+  if (cat === null && gull === null && curses.length === 0 && gates === null && !festival) {
     return null;
   }
 
@@ -66,6 +81,20 @@ function EntityOverlayImpl({ cat, gull, curses, layout, theme }: EntityOverlayPr
   return (
     <View style={[styles.overlay, { height: layout.height }]} testID={ENTITY_OVERLAY_TEST_ID}>
       <Canvas style={StyleSheet.absoluteFill}>
+        {festival ? (
+          <RoundedRect
+            x={layout.originX}
+            y={0}
+            width={layout.width}
+            height={layout.height}
+            r={BOARD.CELL_RADIUS}
+            color={LANTERN.festival}
+            opacity={0.18}
+          />
+        ) : null}
+
+        {gates !== null ? <Lanterns gates={gates} layout={layout} /> : null}
+
         {curses.map((curse) => {
           const o = cellOrigin(layout, curse.x, curse.y);
           const cx = o.x + s / 2;
@@ -97,6 +126,48 @@ function EntityOverlayImpl({ cat, gull, curses, layout, theme }: EntityOverlayPr
         {gull !== null ? <GullGlyph gull={gull} layout={layout} theme={theme} /> : null}
       </Canvas>
     </View>
+  );
+}
+
+/**
+ * Dort kapinin fenerleri: ust/alt kenar ortasi ve sol/sag kenar ortasi.
+ * Yanan fener sicak turuncu + hale; sonuk fener gri.
+ */
+function Lanterns({ gates, layout }: { readonly gates: number; readonly layout: BoardLayout }) {
+  const r = Math.max(4, layout.cellSize * 0.16);
+  const cx = layout.originX + layout.width / 2;
+  const cy = layout.height / 2;
+  const spots: readonly (readonly [number, number, number])[] = [
+    [GATE.TOP, cx, r * 1.2],
+    [GATE.BOTTOM, cx, layout.height - r * 1.2],
+    [GATE.LEFT, layout.originX + r * 1.2, cy],
+    [GATE.RIGHT, layout.originX + layout.width - r * 1.2, cy],
+  ];
+  return (
+    <Group>
+      {spots.map(([gate, x, y]) => {
+        const lit = isGateLit(gates, gate);
+        return (
+          <Group key={gate}>
+            {lit ? <Circle cx={x} cy={y} r={r * 2.2} color={LANTERN.glow} opacity={0.35} /> : null}
+            <Circle
+              cx={x}
+              cy={y}
+              r={r}
+              color={lit ? LANTERN.lit : LANTERN.unlit}
+              opacity={lit ? 1 : 0.55}
+            />
+            <Circle
+              cx={x}
+              cy={y - r * 0.35}
+              r={r * 0.35}
+              color="#FFFFFF"
+              opacity={lit ? 0.9 : 0.3}
+            />
+          </Group>
+        );
+      })}
+    </Group>
   );
 }
 
@@ -151,10 +222,11 @@ function GullGlyph({
   readonly layout: BoardLayout;
   readonly theme: Theme;
 }) {
-  const s = layout.cellSize;
+  // Marti hucrenin ust yarisinda, kucuk: altindaki hucre gorunur kalsin.
+  const s = layout.cellSize * 0.7;
   const o = cellOrigin(layout, gull.col, 0);
-  const cx = o.x + s / 2;
-  const cy = o.y + s * 0.5;
+  const cx = o.x + layout.cellSize / 2;
+  const cy = o.y + layout.cellSize * 0.34;
 
   return (
     <Group>
@@ -162,12 +234,13 @@ function GullGlyph({
       <RoundedRect
         x={o.x}
         y={0}
-        width={s}
+        width={layout.cellSize}
         height={layout.height}
         r={BOARD.CELL_RADIUS}
         color={theme.ghostInvalid}
         opacity={0.12}
       />
+      {/* Sutun vurgusunda genislik hucre boyutudur; kus daha kucuk. */}
       <Oval
         x={cx - s * 0.36}
         y={cy - s * 0.2}

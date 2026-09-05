@@ -21,6 +21,8 @@ export function crossedRecord(before: GameState, after: GameState, ctx: MoveCont
 
 /** Canli olaylarin ses onceligi ve karsiliklari. */
 const EVENT_SOUNDS: readonly (readonly [GameEvent, SoundName])[] = [
+  ['festival', 'festival'],
+  ['catGift', 'cat'],
   ['gullFed', 'gull'],
   ['nazarCleared', 'nazar'],
   ['synergy', 'synergy'],
@@ -30,6 +32,8 @@ const EVENT_SOUNDS: readonly (readonly [GameEvent, SoundName])[] = [
   ['catMoved', 'cat'],
   ['catPetted', 'cat'],
   ['gullLanded', 'gull'],
+  ['gateLit', 'lantern'],
+  ['current', 'current'],
   ['haggleWon', 'haggleWin'],
   ['haggleLost', 'haggleLose'],
 ];
