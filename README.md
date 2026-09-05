@@ -14,10 +14,10 @@ React Native Skia and Reanimated._
 | Sprint | Kapsam                                                       | Durum       |
 | ------ | ------------------------------------------------------------ | ----------- |
 | 0      | Kurulum: Expo, TypeScript strict, lint/format/hook, Jest, CI | ✅ Tamam    |
-| 1      | Oyun mantığı (`src/game/core`), TDD, %90 coverage            | ⏳ Sıradaki |
-| 2      | Skia render katmanı (8×10 grid, parça tepsisi)               | —           |
-| 3      | Gesture + sürükle-bırak + oyun döngüsü                       | —           |
-| 4      | Ses, skor, kalıcı depolama (MMKV)                            | —           |
+| 1      | Oyun mantığı (`src/game/core`), TDD, %90 coverage            | ✅ Tamam    |
+| 2      | Skia render katmanı (8×10 grid, parça tepsisi)               | ✅ Tamam    |
+| 3      | Gesture + sürükle-bırak + oyun döngüsü                       | ✅ Tamam    |
+| 4      | Ses, kalıcı depolama (MMKV), duraklat/devam                  | ⏳ Sıradaki |
 | 5      | 5 İstanbul teması, oyun modları, onboarding                  | —           |
 | 6      | EAS build + Google Play yayını (kapalı test → production)    | —           |
 | 7      | iOS portu + App Store (v1.1, yalnızca v1.0 tutarsa)          | —           |
@@ -109,6 +109,23 @@ testçi toplama işine sprint başlamadan başlanmalıdır.
 | **pre-commit hızlı, pre-push tam**   | 40 sn'lik pre-commit commit'ten kaçınmaya yol açar; garanti aynı, dağıtımı farklı                   |
 
 ## Bilinen Tuzaklar
+
+- **`expo.name` ASCII dışı karakter içeremez.** Prebuild, Kotlin dosyalarının
+  içine `android.package` yerine addan türetilmiş bir paket yazıyor ve derleme
+  `Unresolved reference 'BuildConfig'` ile düşüyor. Türkçe görünen ad
+  [withLocalizedAppName.js](plugins/withLocalizedAppName.js) ile geri yazılır.
+- **`GestureHandlerRootView` olmadan sürükleme sessizce çalışmaz.** Kök
+  layout'ta duruyor; kaldırılırsa hata sadece konsola düşer.
+- **`react-native-gesture-handler` sürümünü `npx expo install` ile ekleyin.**
+  Transitive olarak gelen 3.2.1 SDK 57 ile uyumsuzdu; doğrusu 2.32.0.
+- **RNGH jest-utils:** `State.ACTIVE` `onStart`'ı tetikler; `onUpdate` için
+  `state` alanı **olmayan** ek bir olay gerekir. Ayrıca `fireGestureHandler`
+  eksik yaşam döngüsü olaylarını kendisi tamamlar, yani geçici sürükleme
+  durumu bu yolla yakalanamaz.
+- **Emülatörde ilk soğuk açılış ANR verebilir.** Skia'nın eklediği yükle
+  başlangıç zaman aşımına uğrayabiliyor; ikinci açılış sorunsuz.
+- **Yerel derlemede tek ABI kullanın:** `npm run android:emu` yalnızca x86_64
+  derler; dört mimari 9 dakika sürerken bu 1.5 dakika.
 
 - **`@testing-library/react-native` v14'te `render()` asenkrondur** (`test-renderer` v1
   geçişi). `await` edilmezse `screen` bağlanmaz ve
