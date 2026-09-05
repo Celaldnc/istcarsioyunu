@@ -5,6 +5,7 @@ import {
   isPlayableWidth,
   pieceSize,
   pointToCell,
+  traySlotAt,
 } from '../layout';
 
 import { BOARD, LAYOUT, PIECES, TRAY } from '@/constants/config';
@@ -190,5 +191,40 @@ describe('pieceSize', () => {
 
   it('hucreler arasina bosluk ekler', () => {
     expect(pieceSize(20, 3, 2, 2)).toEqual({ width: 64, height: 42 });
+  });
+});
+
+describe('traySlotAt', () => {
+  const width = 390;
+  const tray = computeTrayLayout(width);
+  const rowWidth = tray.slotWidth * TRAY.PIECE_COUNT + TRAY.SLOT_GAP * (TRAY.PIECE_COUNT - 1);
+  const left = (width - rowWidth) / 2;
+  const step = tray.slotWidth + TRAY.SLOT_GAP;
+
+  it('her yuvanin merkezini kendi indeksine cevirir', () => {
+    for (let i = 0; i < TRAY.PIECE_COUNT; i += 1) {
+      const center = left + i * step + tray.slotWidth / 2;
+
+      expect(traySlotAt(tray, width, center)).toBe(i);
+    }
+  });
+
+  it('satirin solunda ve saginda null dondurur', () => {
+    expect(traySlotAt(tray, width, left - 5)).toBeNull();
+    expect(traySlotAt(tray, width, left + rowWidth + 5)).toBeNull();
+  });
+
+  it('yuvalar arasindaki bosluga dokunuldugunda null dondurur', () => {
+    const inGap = left + tray.slotWidth + TRAY.SLOT_GAP / 2;
+
+    expect(traySlotAt(tray, width, inGap)).toBeNull();
+  });
+
+  it('ilk yuvanin sol kenari dahildir', () => {
+    expect(traySlotAt(tray, width, left)).toBe(0);
+  });
+
+  it('son yuvanin sag kenari haric tutulur', () => {
+    expect(traySlotAt(tray, width, left + rowWidth)).toBeNull();
   });
 });

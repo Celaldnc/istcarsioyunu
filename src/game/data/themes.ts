@@ -21,6 +21,10 @@ export interface Theme {
   readonly emptyCell: string;
   /** Dolu hucre renkleri; indeks = parcanin colorId degeri */
   readonly palette: readonly string[];
+  /** Gecerli yerlestirme onizlemesi (hayalet) */
+  readonly ghostValid: string;
+  /** Gecersiz yerlestirme onizlemesi */
+  readonly ghostInvalid: string;
 }
 
 /** Kapalicarsi: sicak turuncu-sari, bakir ve cay tonlari. */
@@ -37,6 +41,8 @@ export const CARSI: Theme = {
     '#5F7F3A', // fistik
     '#7A5C3E', // bakir
   ],
+  ghostValid: '#4E8A3C',
+  ghostInvalid: '#B33A3A',
 };
 
 export const THEMES: readonly Theme[] = [CARSI];

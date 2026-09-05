@@ -131,3 +131,30 @@ export function pieceSize(
     height: cellSize * height + gap * (height - 1),
   };
 }
+
+/**
+ * Tepsi satirindaki bir x koordinatinin hangi yuvaya dustugunu bulur.
+ *
+ * PieceTray satiri ortalanmis bir flex row; sol kenari bu yuzden
+ * hesaplanarak bulunuyor. Yuvalar arasindaki bosluga denk gelen dokunuslar
+ * null doner (yanlis parcayi surukleme kazasi olmasin).
+ */
+export function traySlotAt(
+  tray: TrayLayout,
+  availableWidth: number,
+  x: number,
+  slots: number = TRAY.PIECE_COUNT,
+): number | null {
+  const rowWidth = tray.slotWidth * slots + TRAY.SLOT_GAP * (slots - 1);
+  const local = x - (availableWidth - rowWidth) / 2;
+
+  if (local < 0 || local >= rowWidth) {
+    return null;
+  }
+
+  const step = tray.slotWidth + TRAY.SLOT_GAP;
+  const index = Math.floor(local / step);
+
+  // Yuvanin sonundan sonraki bosluk bandi
+  return local - index * step < tray.slotWidth ? index : null;
+}

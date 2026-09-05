@@ -32,6 +32,8 @@ export const LAYOUT = {
   MIN_SUPPORTED_WIDTH: 320,
   /** Hucrenin dokunulabilir/oynanabilir kaldigi alt sinir (dp) */
   MIN_PLAYABLE_CELL_SIZE: 32,
+  /** Tahta ile parca tepsisi arasindaki dikey bosluk (dp) */
+  BOARD_TRAY_GAP: 24,
 } as const;
 
 export const PIECES = {

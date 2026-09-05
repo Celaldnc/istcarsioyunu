@@ -18,7 +18,13 @@ describe('temalar', () => {
   it.each(THEMES.map((t) => [t.id, t] as const))(
     '%s: tum renkleri gecerli hex bicimindedir',
     (_id, theme) => {
-      const colors = [theme.boardBackground, theme.emptyCell, ...theme.palette];
+      const colors = [
+        theme.boardBackground,
+        theme.emptyCell,
+        theme.ghostValid,
+        theme.ghostInvalid,
+        ...theme.palette,
+      ];
 
       for (const color of colors) {
         expect(color).toMatch(/^#[0-9A-Fa-f]{6}$/);
