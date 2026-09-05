@@ -1,5 +1,5 @@
 import { countFilledCells, isBoardEmpty } from '../board';
-import { playPiece, restart, startGame, type GameState } from '../game';
+import { NO_PROGRESS, playPiece, restart, startGame, type GameState } from '../game';
 import { shapeById } from '../pieces';
 import { CLASSIC_RULES } from '../rules';
 import type { Board, Piece } from '../types';
@@ -17,7 +17,7 @@ const LIVE_DEFAULTS = {
   gull: null,
   curses: [],
   hagglesLeft: 0,
-  progress: { lines: 0, cini: 0, synergy: 0, bridge: 0 },
+  progress: NO_PROGRESS,
   events: [],
   lastBonuses: [],
 };

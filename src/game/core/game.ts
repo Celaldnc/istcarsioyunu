@@ -70,6 +70,12 @@ export interface Progress {
   readonly cini: number;
   readonly synergy: number;
   readonly bridge: number;
+  readonly gullsFed: number;
+  readonly catMoves: number;
+  readonly makams: number;
+  readonly nazarCleared: number;
+  /** Bu oyundaki en uzun ardisik temizleme serisi. */
+  readonly bestStreak: number;
 }
 
 export interface GameState {
@@ -114,7 +120,17 @@ export interface GameState {
 }
 
 const NO_LINES: FullLines = { rows: [], cols: [] };
-const NO_PROGRESS: Progress = { lines: 0, cini: 0, synergy: 0, bridge: 0 };
+export const NO_PROGRESS: Progress = {
+  lines: 0,
+  cini: 0,
+  synergy: 0,
+  bridge: 0,
+  gullsFed: 0,
+  catMoves: 0,
+  makams: 0,
+  nazarCleared: 0,
+  bestStreak: 0,
+};
 
 export interface StartOptions {
   readonly board?: Board;
@@ -371,6 +387,11 @@ export function playPiece(state: GameState, trayIndex: number, origin: Point): G
     cini: state.progress.cini + ciniCount,
     synergy: state.progress.synergy + synergyCount,
     bridge: state.progress.bridge + bridges,
+    gullsFed: state.progress.gullsFed + (events.includes('gullFed') ? 1 : 0),
+    catMoves: state.progress.catMoves + (catTick.moved ? 1 : 0),
+    makams: state.progress.makams + (events.includes('makamComplete') ? 1 : 0),
+    nazarCleared: state.progress.nazarCleared + cursesCleared,
+    bestStreak: Math.max(state.progress.bestStreak, scored.nextStreak),
   };
 
   const next: GameState = {

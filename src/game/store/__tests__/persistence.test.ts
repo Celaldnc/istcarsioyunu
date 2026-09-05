@@ -4,11 +4,16 @@ import {
   loadGame,
   loadHighScore,
   loadSettings,
+  loadJourney,
+  awardPostcard,
+  loadStats,
+  saveStats,
   recordScore,
   saveGame,
   saveSettings,
 } from '../persistence';
 import { createMemoryStore } from '../storage';
+import { EMPTY_STATS } from '@/game/core/titles';
 
 import { playPiece, startGame } from '@/game/core/game';
 import type { Piece } from '@/game/core/types';
@@ -186,5 +191,52 @@ describe('esnaf ayari kaliciligi', () => {
   it('bozuk veya bos deger varsayilana duser', () => {
     expect(loadSettings(createMemoryStore({ settings: '{"esnafId":""}' })).esnafId).toBe('cirak');
     expect(loadSettings(createMemoryStore({ settings: '{"esnafId":5}' })).esnafId).toBe('cirak');
+  });
+});
+
+describe('yolculuk ilerlemesi', () => {
+  it('kayit yokken bos', () => {
+    expect(loadJourney(createMemoryStore())).toEqual({ postcards: [] });
+  });
+
+  it('kartpostal bir kez verilir ve kalici olur', () => {
+    const store = createMemoryStore();
+    awardPostcard(store, 'eminonu');
+    awardPostcard(store, 'eminonu');
+
+    expect(loadJourney(store).postcards).toEqual(['eminonu']);
+  });
+
+  it('bozuk kayit bos ilerleme sayilir', () => {
+    expect(loadJourney(createMemoryStore({ journey: '{bozuk' }))).toEqual({ postcards: [] });
+    expect(loadJourney(createMemoryStore({ journey: '{"postcards":"x"}' }))).toEqual({
+      postcards: [],
+    });
+    expect(loadJourney(createMemoryStore({ journey: '{"postcards":["a",5]}' })).postcards).toEqual([
+      'a',
+    ]);
+  });
+});
+
+describe('omur boyu istatistik', () => {
+  it('kayit yokken sifirlar', () => {
+    expect(loadStats(createMemoryStore())).toEqual(EMPTY_STATS);
+  });
+
+  it('kaydedilen istatistik geri gelir', () => {
+    const store = createMemoryStore();
+    saveStats(store, { ...EMPTY_STATS, games: 3, lines: 40 });
+
+    expect(loadStats(store).games).toBe(3);
+    expect(loadStats(store).lines).toBe(40);
+  });
+
+  it('bozuk alanlar sifira duser, digerleri korunur', () => {
+    const stats = loadStats(createMemoryStore({ stats: '{"games":"iki","lines":7}' }));
+
+    expect(stats.games).toBe(0);
+    expect(stats.lines).toBe(7);
+    expect(loadStats(createMemoryStore({ stats: '[1]' }))).toEqual(EMPTY_STATS);
+    expect(loadStats(createMemoryStore({ stats: '{bozuk' }))).toEqual(EMPTY_STATS);
   });
 });

@@ -2,6 +2,7 @@ import type { KeyValueStore } from './storage';
 
 import type { GameState } from '@/game/core/game';
 import { DEFAULT_ESNAF_ID } from '@/game/core/rules';
+import { EMPTY_STATS, type LifetimeStats } from '@/game/core/titles';
 import { deserializeGame, serializeGame } from '@/game/core/save';
 
 /**
@@ -18,6 +19,8 @@ const KEYS = {
   game: 'game.current',
   highScore: 'score.high',
   settings: 'settings',
+  journey: 'journey',
+  stats: 'stats',
 } as const;
 
 export interface Settings {
@@ -95,4 +98,72 @@ export function loadSettings(store: KeyValueStore): Settings {
 
 export function saveSettings(store: KeyValueStore, settings: Settings): void {
   store.set(KEYS.settings, JSON.stringify(settings));
+}
+
+// --- Yolculuk: kazanilan kartpostallar ---------------------------------------
+
+export interface JourneyProgress {
+  /** Kazanilan kartpostallarin semt kimlikleri. */
+  readonly postcards: readonly string[];
+}
+
+export const EMPTY_JOURNEY: JourneyProgress = { postcards: [] };
+
+export function loadJourney(store: KeyValueStore): JourneyProgress {
+  const raw = store.getString(KEYS.journey);
+  if (raw === undefined) {
+    return EMPTY_JOURNEY;
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) {
+      return EMPTY_JOURNEY;
+    }
+    const { postcards } = parsed as Partial<JourneyProgress>;
+    if (!Array.isArray(postcards)) {
+      return EMPTY_JOURNEY;
+    }
+    return { postcards: postcards.filter((id): id is string => typeof id === 'string') };
+  } catch {
+    return EMPTY_JOURNEY;
+  }
+}
+
+/** Kartpostali ekler (tekrar vermez) ve guncel ilerlemeyi dondurur. */
+export function awardPostcard(store: KeyValueStore, levelId: string): JourneyProgress {
+  const current = loadJourney(store);
+  if (current.postcards.includes(levelId)) {
+    return current;
+  }
+  const next = { postcards: [...current.postcards, levelId] };
+  store.set(KEYS.journey, JSON.stringify(next));
+  return next;
+}
+
+// --- Omur boyu istatistik ----------------------------------------------------
+
+export function loadStats(store: KeyValueStore): LifetimeStats {
+  const raw = store.getString(KEYS.stats);
+  if (raw === undefined) {
+    return EMPTY_STATS;
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) {
+      return EMPTY_STATS;
+    }
+    const out: Record<string, number> = {};
+    for (const key of Object.keys(EMPTY_STATS) as (keyof LifetimeStats)[]) {
+      const n = (parsed as Record<string, unknown>)[key];
+      // Eksik/bozuk alan sifira duser; digerleri korunur.
+      out[key] = typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : 0;
+    }
+    return out as unknown as LifetimeStats;
+  } catch {
+    return EMPTY_STATS;
+  }
+}
+
+export function saveStats(store: KeyValueStore, stats: LifetimeStats): void {
+  store.set(KEYS.stats, JSON.stringify(stats));
 }

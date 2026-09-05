@@ -1,6 +1,6 @@
 import { isGameOver } from './board';
 import { withCatBlocked, type Cat } from './cat';
-import type { GameState, GameStatus, Progress } from './game';
+import { NO_PROGRESS, type GameState, type GameStatus, type Progress } from './game';
 import type { Gull } from './gull';
 import { levelById } from './levels';
 import type { Curse } from './nazar';
@@ -110,7 +110,7 @@ const MIGRATIONS: Readonly<
     gull: null,
     curses: [],
     hagglesLeft: 0,
-    progress: { lines: 0, cini: 0, synergy: 0, bridge: 0 },
+    progress: NO_PROGRESS,
   }),
 };
 
@@ -289,15 +289,32 @@ function parseCurses(value: unknown): Curse[] | null {
   return curses;
 }
 
+const PROGRESS_KEYS = [
+  'lines',
+  'cini',
+  'synergy',
+  'bridge',
+  'gullsFed',
+  'catMoves',
+  'makams',
+  'nazarCleared',
+  'bestStreak',
+] as const;
+
 function parseProgress(value: unknown): Progress | null {
   if (typeof value !== 'object' || value === null) {
     return null;
   }
-  const { lines, cini, synergy, bridge } = value as Record<string, unknown>;
-  if (!isCount(lines) || !isCount(cini) || !isCount(synergy) || !isCount(bridge)) {
-    return null;
+  const raw = value as Record<string, unknown>;
+  const out: Record<string, number> = {};
+  for (const key of PROGRESS_KEYS) {
+    const n = raw[key];
+    if (!isCount(n)) {
+      return null;
+    }
+    out[key] = n;
   }
-  return { lines, cini, synergy, bridge };
+  return out as unknown as Progress;
 }
 
 /** Kaydi guncel semaya cikarir; zincir kirilirsa null. */

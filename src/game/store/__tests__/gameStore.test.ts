@@ -7,7 +7,7 @@ import { CLASSIC_RULES } from '@/game/core/rules';
 import type { Piece, Point } from '@/game/core/types';
 
 import { BOARD } from '@/constants/config';
-import { takeTeaBreak } from '@/game/core/game';
+import { NO_PROGRESS, takeTeaBreak } from '@/game/core/game';
 import { useGameStore } from '@/game/store/gameStore';
 
 /** Canli Carsi alanlarinin klasik (kapali) varsayilanlari; literal kurulumlar icin. */
@@ -21,7 +21,7 @@ const LIVE_DEFAULTS = {
   gull: null,
   curses: [],
   hagglesLeft: 0,
-  progress: { lines: 0, cini: 0, synergy: 0, bridge: 0 },
+  progress: NO_PROGRESS,
   events: [],
   lastBonuses: [],
 };
@@ -210,8 +210,10 @@ describe('oyun sonunda yuksek skor', () => {
 });
 
 describe('esnaf replikleri', () => {
-  it('yeni oyunda esnaf karsilar', () => {
-    expect(useGameStore.getState().esnaf?.event).toBe('start');
+  it('yeni oyunda esnaf gunun saatine gore karsilar', () => {
+    expect(['start', 'morning', 'evening', 'night']).toContain(
+      useGameStore.getState().esnaf?.event,
+    );
   });
 
   it('siradan hamle mevcut repligi degistirmez', () => {
@@ -330,5 +332,60 @@ describe('canli carsi aksiyonlari', () => {
     expect(useGameStore.getState().selectedEsnafId).toBe('halici');
     expect(useGameStore.getState().rules.ciniMultiplier).toBe(2);
     useGameStore.getState().setEsnaf('cirak');
+  });
+});
+
+describe('oyun sonu istatistik ve kartpostal', () => {
+  const deadBoardWithGap = () => {
+    const diagonal = Array.from({ length: BOARD.ROWS }, (_, y) => [y % BOARD.COLS, y] as const);
+    const empties = [...diagonal, [5, 0] as const];
+    return Array.from({ length: BOARD.ROWS }, (_, y) =>
+      Array.from({ length: BOARD.COLS }, (_, x) =>
+        empties.some(([ex, ey]) => ex === x && ey === y) ? null : 1,
+      ),
+    );
+  };
+
+  it('oyun bitince omur boyu istatistik guncellenir', () => {
+    const dot = shapeById('dot')!;
+    const plus = shapeById('plus')!;
+    const before = useGameStore.getState().stats.games;
+    useGameStore.setState({
+      board: deadBoardWithGap(),
+      tray: [
+        { shape: dot, colorId: 1 },
+        { shape: plus, colorId: 1 },
+        { shape: plus, colorId: 1 },
+      ],
+      status: 'playing',
+    });
+
+    useGameStore.getState().play(0, { x: 5, y: 0 });
+
+    expect(useGameStore.getState().status).toBe('gameOver');
+    expect(useGameStore.getState().stats.games).toBe(before + 1);
+  });
+
+  it('semt kazanilinca kartpostal verilir', () => {
+    useGameStore.getState().newGame(SEED, { mode: 'journey', levelId: 'eminonu' });
+    const dot = shapeById('dot')!;
+    const board = Array.from({ length: BOARD.ROWS }, (_, y) =>
+      Array.from({ length: BOARD.COLS }, (_, x) => (y === 0 && x < BOARD.COLS - 1 ? 1 : null)),
+    );
+    useGameStore.setState({
+      board,
+      tray: [
+        { shape: dot, colorId: 1 },
+        { shape: dot, colorId: 1 },
+        { shape: dot, colorId: 1 },
+      ],
+      score: 295,
+    });
+
+    useGameStore.getState().play(0, { x: BOARD.COLS - 1, y: 0 });
+
+    expect(useGameStore.getState().status).toBe('won');
+    expect(useGameStore.getState().postcards).toContain('eminonu');
+    expect(useGameStore.getState().esnaf?.event).toBe('levelWon');
   });
 });

@@ -1,12 +1,16 @@
 import { create } from 'zustand';
 
 import {
+  awardPostcard,
   loadGame,
   loadHighScore,
+  loadJourney,
   loadSettings,
+  loadStats,
   recordScore,
   saveGame,
   saveSettings,
+  saveStats,
   type Settings,
 } from './persistence';
 import { getAppStore } from './storage';
@@ -25,7 +29,9 @@ import {
 } from '@/game/core/game';
 import { seedFromDate } from '@/game/core/rng';
 import type { GameMode } from '@/game/core/rules';
+import { addGameToStats, type LifetimeStats } from '@/game/core/titles';
 import type { Point } from '@/game/core/types';
+import { dayPhaseAt, greetingForPhase } from '@/game/data/dayCycle';
 import {
   esnafEventForEvents,
   esnafEventForMove,
@@ -62,6 +68,10 @@ export interface GameStore extends GameState {
   /** Secili esnaf (ayarlardan; yeni oyunda kurala islenir). */
   readonly selectedEsnafId: string;
   readonly esnaf: EsnafMessage | null;
+  /** Kazanilan kartpostallar (semt kimlikleri). */
+  readonly postcards: readonly string[];
+  /** Omur boyu istatistik (unvan bundan turetilir). */
+  readonly stats: LifetimeStats;
 
   /** Yeni oyun baslatir. Seed verilmezse gunun tarihinden turetilir. */
   newGame: (seed?: number, options?: NewGameOptions) => void;
@@ -124,7 +134,22 @@ export const useGameStore = create<GameStore>((set, get) => {
 
   const begin = (next: GameState, salt: number) => {
     saveGame(storage, next);
-    set({ ...next, esnaf: speak('start', salt) });
+    // Karsilama gunun saatine gore: sabah simit, gece fener.
+    set({ ...next, esnaf: speak(greetingForPhase(dayPhaseAt(new Date())), salt) });
+  };
+
+  /**
+   * Oyun bitince (kaybedildi veya semt kazanildi) bir kez calisir:
+   * rekor, omur boyu istatistik ve kartpostal.
+   */
+  const finishGame = (next: GameState) => {
+    const stats = addGameToStats(get().stats, { score: next.score, ...next.progress });
+    saveStats(storage, stats);
+    const postcards =
+      next.status === 'won' && next.levelId !== null
+        ? awardPostcard(storage, next.levelId).postcards
+        : get().postcards;
+    return { highScore: recordScore(storage, next.score), stats, postcards };
   };
 
   return {
@@ -133,7 +158,9 @@ export const useGameStore = create<GameStore>((set, get) => {
     soundEnabled: settings.soundEnabled,
     hapticsEnabled: settings.hapticsEnabled,
     selectedEsnafId: settings.esnafId,
-    esnaf: speak('start', Date.now()),
+    esnaf: speak(greetingForPhase(dayPhaseAt(new Date())), Date.now()),
+    postcards: loadJourney(storage).postcards,
+    stats: loadStats(storage),
 
     newGame: (seed, options = {}) => {
       const actualSeed = seed ?? seedFromDate(new Date());
@@ -168,7 +195,7 @@ export const useGameStore = create<GameStore>((set, get) => {
 
       set({
         ...next,
-        highScore: finished ? recordScore(storage, next.score) : current.highScore,
+        ...(finished ? finishGame(next) : {}),
         // Siradan hamlede mevcut replik korunur; baloncugun kapanmasi UI'daki
         // zamanlayicinin isi.
         esnaf: event === null ? current.esnaf : speak(event, next.score + next.piecesDrawn),

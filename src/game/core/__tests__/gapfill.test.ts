@@ -1,6 +1,6 @@
 import { CLASSIC_RULES } from '../rules';
 import { createBoard } from '../board';
-import { playPiece, startGame, type GameState } from '../game';
+import { NO_PROGRESS, playPiece, startGame, type GameState } from '../game';
 import {
   cellOrigin,
   computeBoardLayout,
@@ -27,7 +27,7 @@ const LIVE_DEFAULTS = {
   gull: null,
   curses: [],
   hagglesLeft: 0,
-  progress: { lines: 0, cini: 0, synergy: 0, bridge: 0 },
+  progress: NO_PROGRESS,
   events: [],
   lastBonuses: [],
 };

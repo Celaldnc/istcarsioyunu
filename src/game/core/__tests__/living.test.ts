@@ -1,5 +1,6 @@
 import { createBoard, createBoardFromMask } from '../board';
 import {
+  NO_PROGRESS,
   effectiveBoard,
   haggle,
   objectiveMet,
@@ -325,7 +326,7 @@ describe('yolculuk seviyesi', () => {
   });
 
   it('objectiveMet her hedef turunu degerlendirir', () => {
-    const progress = { lines: 5, cini: 2, synergy: 1, bridge: 0 };
+    const progress = { ...NO_PROGRESS, lines: 5, cini: 2, synergy: 1, bridge: 0 };
     expect(objectiveMet({ kind: 'lines', target: 5 }, { score: 0, progress })).toBe(true);
     expect(objectiveMet({ kind: 'cini', target: 3 }, { score: 0, progress })).toBe(false);
     expect(objectiveMet({ kind: 'synergy', target: 1 }, { score: 0, progress })).toBe(true);
