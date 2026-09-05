@@ -10,7 +10,17 @@
  * yeterli; burada veya cagri yerlerinde degisiklik gerekmez.
  */
 
-export const SOUND_NAMES = ['place', 'clear', 'combo', 'invalid', 'gameOver'] as const;
+export const SOUND_NAMES = [
+  'place',
+  'clear',
+  'combo',
+  'invalid',
+  'gameOver',
+  'cini',
+  'levelUp',
+  'record',
+  'teaBreak',
+] as const;
 
 export type SoundName = (typeof SOUND_NAMES)[number];
 
@@ -21,4 +31,8 @@ export const SOUND_SOURCES: Readonly<Record<SoundName, unknown>> = {
   combo: require('../../../assets/sounds/combo.wav'),
   invalid: require('../../../assets/sounds/invalid.wav'),
   gameOver: require('../../../assets/sounds/gameOver.wav'),
+  cini: require('../../../assets/sounds/cini.wav'),
+  levelUp: require('../../../assets/sounds/levelUp.wav'),
+  record: require('../../../assets/sounds/record.wav'),
+  teaBreak: require('../../../assets/sounds/teaBreak.wav'),
 };

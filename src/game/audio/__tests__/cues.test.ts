@@ -1,5 +1,6 @@
 import { cueForMove } from '../cues';
 
+import { LEVEL } from '@/constants/config';
 import { playPiece, startGame } from '@/game/core/game';
 import type { GameState } from '@/game/core/game';
 
@@ -40,5 +41,41 @@ describe('cueForMove', () => {
     const over: GameState = { ...before, status: 'gameOver', lastClear: { rows: [0], cols: [] } };
 
     expect(cueForMove(before, over)).toBe('gameOver');
+  });
+
+  it('tek renkli cizgi (Cini) combo sesinin onune gecer', () => {
+    const after: GameState = {
+      ...withClear({ ...before }, [0, 1], []),
+      lastCini: { rows: [0], cols: [] },
+    };
+
+    expect(cueForMove(before, after)).toBe('cini');
+  });
+
+  it('seviye atlandiysa seviye sesi (temizleme sesinin onune gecer)', () => {
+    const after = withClear({ ...before, score: LEVEL.POINTS_PER_LEVEL }, [0], []);
+
+    expect(cueForMove(before, after)).toBe('levelUp');
+  });
+
+  it('rekor asildiginda rekor sesi her seyin onune gecer', () => {
+    const after: GameState = {
+      ...withClear({ ...before, score: 150 }, [0, 1], []),
+      lastCini: { rows: [0], cols: [] },
+    };
+
+    expect(cueForMove({ ...before, score: 90 }, after, { highScore: 100 })).toBe('record');
+  });
+
+  it('rekor zaten asilmissa tekrar rekor sesi calmaz', () => {
+    const after = withClear({ ...before, score: 200 }, [0], []);
+
+    expect(cueForMove({ ...before, score: 150 }, after, { highScore: 100 })).toBe('clear');
+  });
+
+  it('ilk oyunda (rekor 0) rekor sesi calmaz', () => {
+    const after = withClear({ ...before, score: 10 }, [0], []);
+
+    expect(cueForMove(before, after, { highScore: 0 })).toBe('clear');
   });
 });

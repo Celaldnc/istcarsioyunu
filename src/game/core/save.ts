@@ -3,7 +3,7 @@ import type { GameState, GameStatus } from './game';
 import { shapeById } from './pieces';
 import type { Board, Cell, Piece } from './types';
 
-import { BOARD, THEME, TRAY } from '@/constants/config';
+import { BOARD, TEA_BREAK, THEME, TRAY } from '@/constants/config';
 
 /**
  * Oyun durumunun kalici depolamaya yazilabilir bicimi.
@@ -34,7 +34,7 @@ import { BOARD, THEME, TRAY } from '@/constants/config';
  */
 
 /** Guncel kayit bicimi surumu. */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 interface SavedSlot {
   readonly shapeId: string;
@@ -52,13 +52,19 @@ interface SavedGameV1 {
   readonly status: GameStatus;
 }
 
-/** v2 — ardisik temizleme serisi eklendi. */
+/** v2 — DONDURULDU. Ardisik temizleme serisi eklendi. */
 interface SavedGameV2 extends Omit<SavedGameV1, 'version'> {
   readonly version: 2;
   readonly comboStreak: number;
 }
 
-type SavedGame = SavedGameV2;
+/** v3 — "Cay molasi" hakki eklendi. */
+interface SavedGameV3 extends Omit<SavedGameV2, 'version'> {
+  readonly version: 3;
+  readonly teaBreaksLeft: number;
+}
+
+type SavedGame = SavedGameV3;
 
 /**
  * Surumden bir sonrakine gecis. Eksik alanlar VARSAYILANLA doldurulur;
@@ -69,6 +75,8 @@ const MIGRATIONS: Readonly<
 > = {
   // v1'de seri kavrami yoktu; sifirdan baslamak dogru varsayilan.
   1: (raw) => ({ ...raw, version: 2, comboStreak: 0 }),
+  // v2'de cay molasi yoktu; eski oyuna tam hak vermek oyuncunun lehine.
+  2: (raw) => ({ ...raw, version: 3, teaBreaksLeft: TEA_BREAK.PER_GAME }),
 };
 
 export function serializeGame(state: GameState): string {
@@ -83,6 +91,7 @@ export function serializeGame(state: GameState): string {
     piecesDrawn: state.piecesDrawn,
     status: state.status,
     comboStreak: state.comboStreak,
+    teaBreaksLeft: state.teaBreaksLeft,
   };
 
   return JSON.stringify(payload);
@@ -115,8 +124,10 @@ const isColorId = (value: unknown): value is number =>
 const isPiecesDrawn = (value: unknown): value is number =>
   Number.isInteger(value) && (value as number) >= 0 && (value as number) % TRAY.PIECE_COUNT === 0;
 
-const isStreak = (value: unknown): value is number =>
+/** Negatif olmayan tamsayi (seri, kalan hak...). */
+const isCount = (value: unknown): value is number =>
   Number.isInteger(value) && (value as number) >= 0;
+const isStreak = isCount;
 
 function parseBoard(value: unknown): Board | null {
   if (!Array.isArray(value) || value.length !== BOARD.ROWS) {
@@ -229,7 +240,8 @@ export function deserializeGame(json: string): GameState | null {
     !isFiniteNumber(saved.seed) ||
     !isPiecesDrawn(saved.piecesDrawn) ||
     !isStatus(saved.status) ||
-    !isStreak(saved.comboStreak)
+    !isStreak(saved.comboStreak) ||
+    !isCount(saved.teaBreaksLeft)
   ) {
     return null;
   }
@@ -249,8 +261,10 @@ export function deserializeGame(json: string): GameState | null {
     piecesDrawn: saved.piecesDrawn,
     status,
     comboStreak: saved.comboStreak,
+    teaBreaksLeft: saved.teaBreaksLeft,
     // Animasyon ipuclari gecicidir; geri yuklerken sifirlanir.
     lastClear: { rows: [], cols: [] },
     lastGain: 0,
+    lastCini: { rows: [], cols: [] },
   };
 }

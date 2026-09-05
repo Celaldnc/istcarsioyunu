@@ -2,7 +2,7 @@ import { playPiece, startGame } from '../game';
 import { SAVE_VERSION, deserializeGame, serializeGame } from '../save';
 import type { Piece } from '../types';
 
-import { BOARD, TRAY } from '@/constants/config';
+import { BOARD, TEA_BREAK, TRAY } from '@/constants/config';
 
 const SEED = 20260905;
 
@@ -305,5 +305,37 @@ describe('surum gocu', () => {
 
   it('kesirli seri degeri reddedilir', () => {
     expect(deserializeGame(corrupt((p) => (p.comboStreak = 1.5)))).toBeNull();
+  });
+});
+
+describe('kayit gocu: v2 -> v3 (cay molasi)', () => {
+  const asV2 = (): string => {
+    const parsed = JSON.parse(serializeGame(startGame(SEED))) as Record<string, unknown>;
+    parsed.version = 2;
+    delete parsed.teaBreaksLeft;
+    return JSON.stringify(parsed);
+  };
+
+  it('v2 kaydi tam cay molasi hakkiyla yuklenir', () => {
+    const restored = deserializeGame(asV2());
+
+    expect(restored).not.toBeNull();
+    expect(restored?.teaBreaksLeft).toBe(TEA_BREAK.PER_GAME);
+  });
+
+  it('guncel kayit cay molasi hakkini korur', () => {
+    const state = { ...startGame(SEED), teaBreaksLeft: 0 };
+
+    expect(deserializeGame(serializeGame(state))?.teaBreaksLeft).toBe(0);
+  });
+
+  it('bozuk cay molasi degeri reddedilir', () => {
+    expect(deserializeGame(corrupt((p) => (p.teaBreaksLeft = -1)))).toBeNull();
+    expect(deserializeGame(corrupt((p) => (p.teaBreaksLeft = 'bir')))).toBeNull();
+    expect(deserializeGame(corrupt((p) => (p.teaBreaksLeft = 1.5)))).toBeNull();
+  });
+
+  it('SAVE_VERSION 3 oldu', () => {
+    expect(SAVE_VERSION).toBe(3);
   });
 });

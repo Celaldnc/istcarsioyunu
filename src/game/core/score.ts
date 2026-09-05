@@ -23,6 +23,8 @@ export interface ScoreInput {
    * temizleniyor). Ilk temizlemede 0'dir.
    */
   readonly streak?: number;
+  /** Temizlenen cizgilerden kaci tek renkli ("Cini"). */
+  readonly ciniLines?: number;
 }
 
 export interface ScoreResult {
@@ -33,6 +35,8 @@ export interface ScoreResult {
   /** Ardisik temizleme serisinden gelen carpan. */
   readonly streakMultiplier: number;
   readonly linePoints: number;
+  /** Tek renkli cizgilerden gelen bonus. */
+  readonly ciniBonus: number;
   readonly perfectClearBonus: number;
   readonly total: number;
   /** Bu hamleden SONRAKI seri; cagiran taraf durumda saklar. */
@@ -80,13 +84,18 @@ export function computeScore(input: ScoreInput): ScoreResult {
   const perfectClearBonus =
     input.boardEmptyAfterClears && lineCount > 0 ? SCORING.PERFECT_CLEAR_BONUS : 0;
 
+  // Cini sayisi bozuksa (NaN, negatif) bonus verilmez; toplam asla NaN olmaz.
+  const ciniCount = Number.isInteger(input.ciniLines) ? Math.max(0, input.ciniLines ?? 0) : 0;
+  const ciniBonus = ciniCount * SCORING.CINI_BONUS;
+
   return {
     lineCount,
     comboMultiplier: multiplier,
     streakMultiplier: streakBonus,
     linePoints,
+    ciniBonus,
     perfectClearBonus,
-    total: linePoints + perfectClearBonus,
+    total: linePoints + ciniBonus + perfectClearBonus,
     // Temizleme yapmayan hamle seriyi sifirlar.
     nextStreak: lineCount > 0 ? streak + 1 : 0,
   };

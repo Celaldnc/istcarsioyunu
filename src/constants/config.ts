@@ -43,6 +43,27 @@ export const PIECES = {
    * Sekillerin kendisi Sprint 1'de pieces.ts'te tanimlanacak.
    */
   MAX_SPAN: 3,
+  /**
+   * Tepside bir parcanin bir onceki parcanin RENGINI alma olasiligi.
+   *
+   * Renk bagimsiz secilseydi tek renkli bir satir kurmak (Cini bonusu)
+   * pratikte imkansiz olurdu: 6 renkte 8 hucrelik satir icin oyuncunun
+   * elinde ayni renkten parca neredeyse hic birikmezdi. Yapiskan renk,
+   * rengi bir STRATEJI boyutu yapar; kalan olasilik tum paletten esit secilir.
+   */
+  COLOR_STICKINESS: 0.45,
+} as const;
+
+export const TEA_BREAK = {
+  /**
+   * Oyun basina "Cay molasi" (devam) hakki. Rakiplerde bu hak reklam
+   * karsiligi verilir; burada ucretsiz ve sinirli.
+   */
+  PER_GAME: 1,
+  /** Molada bosaltilan en dolu satir sayisi */
+  ROWS: 2,
+  /** Molada bosaltilan en dolu sutun sayisi */
+  COLS: 2,
 } as const;
 
 export const THEME = {
@@ -88,6 +109,13 @@ export const SCORING = {
   POINTS_PER_LINE: 10,
   /** Tray'deki tum parcalar kullanilinca verilen bonus */
   PERFECT_CLEAR_BONUS: 100,
+  /**
+   * Tek renkli bir cizgi ("Cini") temizlendiginde cizgi basina bonus.
+   *
+   * Block Blast'ta renk sustur; burada rengi dusunmek puan getirir. Bonus,
+   * tek cizgi puaninin (10) belirgin ustunde ki hedeflemeye deger olsun.
+   */
+  CINI_BONUS: 50,
 } as const;
 
 export const COMBO = {

@@ -2,6 +2,11 @@
 module.exports = {
   preset: 'jest-expo',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  // Reanimated 4, react-native-worklets uzerine kurulu. Worklets'in Jest
+  // rehberi bu cozumleyiciyi ister: paketin ".native" dosyalari yerine JS
+  // mock uygulamasini secer. jest-expo kendi resolver'ini tanimlamiyor,
+  // dolayisiyla burada ezilen bir sey yok.
+  resolver: 'react-native-worklets/jest/resolver',
   // Testler arasi mock sizintisini engeller.
   clearMocks: true,
   restoreMocks: true,

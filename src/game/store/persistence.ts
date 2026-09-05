@@ -21,9 +21,10 @@ const KEYS = {
 
 export interface Settings {
   readonly soundEnabled: boolean;
+  readonly hapticsEnabled: boolean;
 }
 
-export const DEFAULT_SETTINGS: Settings = { soundEnabled: true };
+export const DEFAULT_SETTINGS: Settings = { soundEnabled: true, hapticsEnabled: true };
 
 export function saveGame(store: KeyValueStore, state: GameState): void {
   store.set(KEYS.game, serializeGame(state));
@@ -72,8 +73,13 @@ export function loadSettings(store: KeyValueStore): Settings {
     if (typeof parsed !== 'object' || parsed === null) {
       return DEFAULT_SETTINGS;
     }
-    const { soundEnabled } = parsed as Partial<Settings>;
-    return { soundEnabled: typeof soundEnabled === 'boolean' ? soundEnabled : true };
+    // Eksik veya bozuk alan varsayilana duser; eski kayitlar (yalnizca ses
+    // alani olan) boylece kayipsiz okunur.
+    const { soundEnabled, hapticsEnabled } = parsed as Partial<Settings>;
+    return {
+      soundEnabled: typeof soundEnabled === 'boolean' ? soundEnabled : true,
+      hapticsEnabled: typeof hapticsEnabled === 'boolean' ? hapticsEnabled : true,
+    };
   } catch {
     return DEFAULT_SETTINGS;
   }

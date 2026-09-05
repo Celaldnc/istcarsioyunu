@@ -188,13 +188,18 @@ describe('G7 playPiece skor akisi (deterministik kurulum)', () => {
     lastClear: { rows: [], cols: [] },
     lastGain: 0,
     comboStreak: 0,
+    lastCini: { rows: [], cols: [] },
+    teaBreaksLeft: 1,
   });
 
   it('son bosluga yerlestirme satiri temizler, puan ve lastGain verir', () => {
     const next = playPiece(stateWith(almostFullTopRow()), 0, { x: BOARD.COLS - 1, y: 0 });
 
     expect(next.lastClear).toEqual({ rows: [0], cols: [] });
-    expect(next.score).toBe(SCORING.POINTS_PER_LINE + SCORING.PERFECT_CLEAR_BONUS);
+    // Satir tek renkli oldugu icin Cini bonusu da gelir.
+    expect(next.score).toBe(
+      SCORING.POINTS_PER_LINE + SCORING.CINI_BONUS + SCORING.PERFECT_CLEAR_BONUS,
+    );
     expect(next.lastGain).toBe(next.score);
   });
 

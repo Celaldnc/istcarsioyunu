@@ -84,6 +84,26 @@ export function findFullLines(board: Board): FullLines {
   return { rows, cols };
 }
 
+/** Dizideki tum hucreler dolu ve ayni renkte mi? */
+const isMonochrome = (cells: readonly (Cell | undefined)[]): boolean => {
+  const first = cells[0];
+  return isFilled(first) && cells.every((cell) => cell === first);
+};
+
+/**
+ * Verilen dolu cizgilerden TEK RENKLI olanlari ("Cini") suzer.
+ *
+ * Temizlemeden ONCEKI tahta uzerinde cagrilmali; temizleme sonrasi
+ * hucreler bosalir ve renk bilgisi kaybolur. Kendi basina dolu cizgi
+ * aramaz: findFullLines'in sonucunu alir ki ayni is iki kez yapilmasin.
+ */
+export function monochromeLines(board: Board, lines: FullLines): FullLines {
+  return {
+    rows: lines.rows.filter((y) => isMonochrome(board[y] ?? [])),
+    cols: lines.cols.filter((x) => isMonochrome(board.map((row) => row[x]))),
+  };
+}
+
 /** Verilen satir ve sutunlari bosaltir. Kesisim hucreleri bir kez temizlenir. */
 export function applyClears(board: Board, lines: FullLines): Board {
   if (lines.rows.length === 0 && lines.cols.length === 0) {

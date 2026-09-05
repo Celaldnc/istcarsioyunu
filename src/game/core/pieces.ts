@@ -2,7 +2,7 @@ import { difficultyProgress } from './level';
 import { pickWeighted, type Rng, type WeightedItem } from './rng';
 import type { Piece, Shape } from './types';
 
-import { THEME, TRAY } from '@/constants/config';
+import { PIECES, THEME, TRAY } from '@/constants/config';
 
 /**
  * Parca katalogu ve uretici.
@@ -184,6 +184,24 @@ export function weightedShapesForLevel(level: number): readonly WeightedItem<Sha
   }));
 }
 
+/**
+ * Ilk tepside cikabilecek sekiller ("engineered luck").
+ *
+ * Block Blast oyunun ilk saniyelerinde bilerek rahat oturan parcalar verir;
+ * oyuncu daha kurallari ogrenmeden "beceremiyorum" hissine kapilmasin. 5
+ * hucreli "plus" ve kivrimli S/Z/L/T disarida; bos tahtada bile ilk izlenim
+ * "kolay" olmali.
+ */
+export const STARTER_SHAPE_IDS: readonly string[] = [
+  'dot',
+  'line-h2',
+  'line-v2',
+  'line-h3',
+  'line-v3',
+  'square',
+  'corner',
+];
+
 const SHAPE_INDEX = new Map(SHAPES.map((shape) => [shape.id, shape]));
 
 export function shapeById(id: string): Shape | undefined {
@@ -213,10 +231,46 @@ export function generatePieceSet(
    */
   level = 1,
 ): Piece[] {
-  const weighted = weightedShapesForLevel(level);
+  return generateFrom(rng, count, weightedShapesForLevel(level));
+}
 
-  return Array.from({ length: count }, () => ({
-    shape: pickWeighted(rng, weighted),
-    colorId: Math.floor(rng() * THEME.PALETTE_SIZE),
-  }));
+/** Ilk tepsi: yalnizca STARTER_SHAPE_IDS, 1. seviye agirliklariyla. */
+export function generateStarterSet(rng: Rng, count: number = TRAY.PIECE_COUNT): Piece[] {
+  const starters = weightedShapesForLevel(1).filter((item) =>
+    STARTER_SHAPE_IDS.includes(item.value.id),
+  );
+  return generateFrom(rng, count, starters);
+}
+
+/**
+ * Renk secimi: tek bir rng cagrisiyla hem "yapis" karari hem de renk.
+ *
+ * roll < STICKINESS ise onceki parcanin rengi alinir; degilse kalan aralik
+ * [STICKINESS, 1) tum palete esit yayilir. Ayri bir rng cagrisi kullanmak
+ * RNG_CALLS_PER_PIECE'i bozar ve tum kayitlari desenkronize ederdi.
+ *
+ * "Onceki" yalnizca AYNI tepsi icindeki parcadir; tepsinin ilk parcasi her
+ * zaman bagimsizdir. Boylece tepsiler tek tek de toplu da uretilse ayni
+ * sonuc cikar (kayit geri yukleme buna dayanir).
+ */
+function pickColor(roll: number, index: number, previous: number | undefined): number {
+  const sticky = index % TRAY.PIECE_COUNT !== 0 && previous !== undefined;
+
+  if (sticky && roll < PIECES.COLOR_STICKINESS) {
+    return previous;
+  }
+  const uniform = sticky ? (roll - PIECES.COLOR_STICKINESS) / (1 - PIECES.COLOR_STICKINESS) : roll;
+  return Math.min(THEME.PALETTE_SIZE - 1, Math.floor(uniform * THEME.PALETTE_SIZE));
+}
+
+function generateFrom(rng: Rng, count: number, weighted: readonly WeightedItem<Shape>[]): Piece[] {
+  const pieces: Piece[] = [];
+
+  for (let index = 0; index < count; index += 1) {
+    const shape = pickWeighted(rng, weighted);
+    const colorId = pickColor(rng(), index, pieces[index - 1]?.colorId);
+    pieces.push({ shape, colorId });
+  }
+
+  return pieces;
 }

@@ -109,6 +109,23 @@ describe('S3 store ses yonetimini gercekten suruyor', () => {
   });
 
   it('cizgi temizleyen hamlede temizleme sesi calar', () => {
+    // Satir KARISIK renkli: tek renk olsaydi Cini sesi one gecerdi.
+    const board = Array.from({ length: BOARD.ROWS }, (_, y) =>
+      Array.from({ length: BOARD.COLS }, (_, x) => (y === 0 && x < BOARD.COLS - 1 ? x % 2 : null)),
+    );
+    useGameStore.setState({
+      board,
+      tray: [pieceOf('dot'), pieceOf('dot'), pieceOf('dot')],
+      status: 'playing',
+    });
+    soundCalls.length = 0;
+
+    useGameStore.getState().play(0, { x: BOARD.COLS - 1, y: 0 });
+
+    expect(soundCalls).toEqual(['play:clear']);
+  });
+
+  it('tek renkli cizgi temizleyen hamlede Cini sesi calar', () => {
     const board = Array.from({ length: BOARD.ROWS }, (_, y) =>
       Array.from({ length: BOARD.COLS }, (_, x) => (y === 0 && x < BOARD.COLS - 1 ? 1 : null)),
     );
@@ -121,7 +138,7 @@ describe('S3 store ses yonetimini gercekten suruyor', () => {
 
     useGameStore.getState().play(0, { x: BOARD.COLS - 1, y: 0 });
 
-    expect(soundCalls).toEqual(['play:clear']);
+    expect(soundCalls).toEqual(['play:cini']);
   });
 
   it('setSoundEnabled hem ses yoneticisine hem diske gecer', () => {

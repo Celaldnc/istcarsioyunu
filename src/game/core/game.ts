@@ -5,15 +5,16 @@ import {
   findFullLines,
   isBoardEmpty,
   isGameOver,
+  monochromeLines,
   placePiece,
 } from './board';
-import { RNG_CALLS_PER_PIECE, generatePieceSet } from './pieces';
+import { RNG_CALLS_PER_PIECE, generatePieceSet, generateStarterSet } from './pieces';
 import { createRng } from './rng';
 import { levelForScore } from './level';
 import { computeScore } from './score';
 import type { Board, FullLines, Piece, Point } from './types';
 
-import { TRAY } from '@/constants/config';
+import { TEA_BREAK, TRAY } from '@/constants/config';
 
 /**
  * Oyunun tum durumu ve gecisleri — SAF bir reducer olarak.
@@ -43,6 +44,10 @@ export interface GameState {
    * Temizleme yapmayan bir hamle bunu sifirlar.
    */
   readonly comboStreak: number;
+  /** Son hamlede temizlenen TEK RENKLI cizgiler (Cini) — kutlama ipucu. */
+  readonly lastCini: FullLines;
+  /** Kalan "Cay molasi" (devam) hakki. */
+  readonly teaBreaksLeft: number;
 }
 
 const NO_LINES: FullLines = { rows: [], cols: [] };
@@ -68,7 +73,9 @@ function remainingPieces(tray: readonly (Piece | undefined)[]): Piece[] {
 }
 
 export function startGame(seed: number, board: Board = createBoard()): GameState {
-  const tray = drawTray(seed, 0, 1);
+  // Ilk tepsi bilerek kolay: rng tuketimi normal tepsiyle ayni oldugundan
+  // sonraki tepsiler (piecesDrawn ile sarilan) etkilenmez.
+  const tray = generateStarterSet(createRng(seed, 0), TRAY.PIECE_COUNT);
 
   return {
     board,
@@ -80,6 +87,8 @@ export function startGame(seed: number, board: Board = createBoard()): GameState
     lastClear: NO_LINES,
     lastGain: 0,
     comboStreak: 0,
+    lastCini: NO_LINES,
+    teaBreaksLeft: TEA_BREAK.PER_GAME,
   };
 }
 
@@ -101,12 +110,15 @@ export function playPiece(state: GameState, trayIndex: number, origin: Point): G
 
   const placed = placePiece(state.board, piece, origin);
   const lines = findFullLines(placed);
+  // Renk bilgisi temizlemeyle kaybolur; Cini temizlemeden ONCE bakilir.
+  const cini = monochromeLines(placed, lines);
   const cleared = applyClears(placed, lines);
 
   const scored = computeScore({
     clearedLines: lines,
     boardEmptyAfterClears: isBoardEmpty(cleared),
     streak: state.comboStreak,
+    ciniLines: cini.rows.length + cini.cols.length,
   });
   const gain = scored.total;
   const score = state.score + gain;
@@ -133,6 +145,57 @@ export function playPiece(state: GameState, trayIndex: number, origin: Point): G
     lastClear: lines,
     lastGain: gain,
     comboStreak: scored.nextStreak,
+    lastCini: cini,
+  };
+}
+
+/** Dolu hucre sayisina gore en dolu `count` cizginin indeksleri. */
+function fullestLines(fillCounts: readonly number[], count: number): number[] {
+  return (
+    fillCounts
+      .map((filled, index) => ({ filled, index }))
+      // Esitlikte alt/sag cizgi one gecer: Block Blast'ta yigilma oradan baslar.
+      .sort((a, b) => b.filled - a.filled || b.index - a.index)
+      .slice(0, count)
+      .map((entry) => entry.index)
+      .sort((a, b) => a - b)
+  );
+}
+
+/**
+ * "Cay molasi": bitmis oyunda en dolu satir ve sutunlari bosaltip devam
+ * ettirir.
+ *
+ * Rakipler bu "devam" hakkini reklam izletip veriyor; burada oyun basina
+ * TEA_BREAK.PER_GAME kadar ucretsiz. Puan vermez, seriyi sifirlar; tepsiye
+ * dokunmaz (oyuncu ayni parcalarla, acilan yerle devam eder).
+ *
+ * Hak yoksa veya oyun surerken cagrilirsa durum DEGISMEZ (ayni referans).
+ */
+export function takeTeaBreak(state: GameState): GameState {
+  if (state.status !== 'gameOver' || state.teaBreaksLeft <= 0) {
+    return state;
+  }
+
+  const rowFill = state.board.map((row) => row.filter((cell) => cell !== null).length);
+  const colFill = Array.from({ length: state.board[0]?.length ?? 0 }, (_, x) =>
+    state.board.reduce((total, row) => total + (row[x] !== null ? 1 : 0), 0),
+  );
+  const lines: FullLines = {
+    rows: fullestLines(rowFill, TEA_BREAK.ROWS),
+    cols: fullestLines(colFill, TEA_BREAK.COLS),
+  };
+  const board = applyClears(state.board, lines);
+
+  return {
+    ...state,
+    board,
+    status: isGameOver(board, remainingPieces(state.tray)) ? 'gameOver' : 'playing',
+    lastClear: lines,
+    lastGain: 0,
+    comboStreak: 0,
+    lastCini: NO_LINES,
+    teaBreaksLeft: state.teaBreaksLeft - 1,
   };
 }
 

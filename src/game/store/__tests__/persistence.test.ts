@@ -116,7 +116,7 @@ describe('ayarlar', () => {
   it('kaydedilen ayar geri yuklenir', () => {
     const store = createMemoryStore();
 
-    saveSettings(store, { soundEnabled: false });
+    saveSettings(store, { soundEnabled: false, hapticsEnabled: true });
 
     expect(loadSettings(store).soundEnabled).toBe(false);
   });
@@ -136,6 +136,32 @@ describe('ayarlar', () => {
   it('yanlis tipli alan varsayilana duser', () => {
     expect(
       loadSettings(createMemoryStore({ settings: '{"soundEnabled":"evet"}' })).soundEnabled,
+    ).toBe(true);
+  });
+});
+
+describe('titresim ayari kaliciligi', () => {
+  it('varsayilan olarak aciktir', () => {
+    expect(DEFAULT_SETTINGS.hapticsEnabled).toBe(true);
+  });
+
+  it('kapatilinca kalici olur, ses ayarina dokunmaz', () => {
+    const store = createMemoryStore();
+    saveSettings(store, { soundEnabled: true, hapticsEnabled: false });
+
+    expect(loadSettings(store)).toEqual({ soundEnabled: true, hapticsEnabled: false });
+  });
+
+  it('eski kayitta alan yoksa acik kabul edilir', () => {
+    expect(loadSettings(createMemoryStore({ settings: '{"soundEnabled":false}' }))).toEqual({
+      soundEnabled: false,
+      hapticsEnabled: true,
+    });
+  });
+
+  it('bozuk deger acik kabul edilir', () => {
+    expect(
+      loadSettings(createMemoryStore({ settings: '{"hapticsEnabled":"hayir"}' })).hapticsEnabled,
     ).toBe(true);
   });
 });

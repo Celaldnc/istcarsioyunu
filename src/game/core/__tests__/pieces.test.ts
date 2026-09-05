@@ -2,7 +2,9 @@ import { canPlace, createBoard } from '../board';
 import {
   RNG_CALLS_PER_PIECE,
   SHAPES,
+  STARTER_SHAPE_IDS,
   generatePieceSet,
+  generateStarterSet,
   shapeById,
   weightedShapesForLevel,
 } from '../pieces';
@@ -131,11 +133,13 @@ describe('RNG_CALLS_PER_PIECE invarianti', () => {
   });
 
   it('advance ile ileri sarma da ayni sonucu verir', () => {
-    const full = generatePieceSet(createRng(7), 6);
+    // Dilim TEPSI SINIRINDA alinir: renk yapiskanligi tepsi icindeki konuma
+    // bagli oldugundan tepsi ortasindan dilimlemek renkleri degistirir.
+    const full = generatePieceSet(createRng(7), TRAY.PIECE_COUNT * 2);
     const rng = createRng(7);
-    advance(rng, 4 * RNG_CALLS_PER_PIECE);
+    advance(rng, TRAY.PIECE_COUNT * RNG_CALLS_PER_PIECE);
 
-    expect(generatePieceSet(rng, 2)).toEqual(full.slice(4));
+    expect(generatePieceSet(rng, TRAY.PIECE_COUNT)).toEqual(full.slice(TRAY.PIECE_COUNT));
   });
 });
 
@@ -204,6 +208,67 @@ describe('seviyeye gore zorluk egrisi', () => {
     generatePieceSet(a, 4, 1);
     const b = createRng(7);
     generatePieceSet(b, 4, LEVEL.MAX);
+
+    expect(a()).toBe(b());
+  });
+});
+
+describe('yapiskan renkler (Cini icin)', () => {
+  /** Uc parcalik tepsilerde en az iki parcanin ayni renkte olma orani. */
+  const sameColorShare = (seedCount: number) => {
+    let hits = 0;
+    for (let seed = 1; seed <= seedCount; seed += 1) {
+      const colors = generatePieceSet(createRng(seed), TRAY.PIECE_COUNT).map((p) => p.colorId);
+      if (new Set(colors).size < colors.length) {
+        hits += 1;
+      }
+    }
+    return hits / seedCount;
+  };
+
+  it('tepside ayni renkten parcalar bagimsiz secimden belirgin daha sik cikar', () => {
+    // 6 renk bagimsiz secilseydi 3 parcada tekrar olasiligi ~%44 olurdu.
+    expect(sameColorShare(2000)).toBeGreaterThan(0.6);
+  });
+
+  it('yine de her renk cikmaya devam eder', () => {
+    const seen = new Set(generatePieceSet(createRng(5), 300).map((p) => p.colorId));
+
+    expect(seen.size).toBe(THEME.PALETTE_SIZE);
+  });
+
+  it('tepsinin ilk parcasi onceki tepsiden bagimsizdir (kayit uyumlulugu)', () => {
+    // Iki tepsi ayri ayri uretildiginde de tek seferde uretildiginde de ayni
+    // sonucu vermeli; aksi halde geri yuklenen oyunun tepsisi degisir.
+    const single = generatePieceSet(createRng(11), TRAY.PIECE_COUNT * 2);
+    const rng = createRng(11);
+    const first = generatePieceSet(rng, TRAY.PIECE_COUNT);
+    const second = generatePieceSet(rng, TRAY.PIECE_COUNT);
+
+    expect([...first, ...second].map((p) => p.colorId)).toEqual(single.map((p) => p.colorId));
+  });
+});
+
+describe('baslangic tepsisi (engineered luck)', () => {
+  it('ilk tepside yalnizca kolay sekiller cikar', () => {
+    for (let seed = 1; seed <= 300; seed += 1) {
+      for (const piece of generateStarterSet(createRng(seed))) {
+        expect(STARTER_SHAPE_IDS).toContain(piece.shape.id);
+      }
+    }
+  });
+
+  it('kolay sekil listesi bes hucreli parca icermez', () => {
+    for (const id of STARTER_SHAPE_IDS) {
+      expect(shapeById(id)?.cells.length).toBeLessThanOrEqual(4);
+    }
+  });
+
+  it('parca basina rng tuketimi normal uretimle aynidir', () => {
+    const a = createRng(3);
+    generateStarterSet(a, 3);
+    const b = createRng(3);
+    generatePieceSet(b, 3);
 
     expect(a()).toBe(b());
   });

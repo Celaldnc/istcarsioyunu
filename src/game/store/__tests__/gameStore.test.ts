@@ -6,6 +6,7 @@ import { shapeById } from '@/game/core/pieces';
 import type { Piece, Point } from '@/game/core/types';
 
 import { BOARD } from '@/constants/config';
+import { takeTeaBreak } from '@/game/core/game';
 import { useGameStore } from '@/game/store/gameStore';
 
 const SEED = 20260905;
@@ -178,6 +179,8 @@ describe('oyun sonunda yuksek skor', () => {
       lastClear: { rows: [], cols: [] },
       lastGain: 0,
       comboStreak: 0,
+      lastCini: { rows: [], cols: [] },
+      teaBreaksLeft: 1,
     });
 
     const accepted = useGameStore.getState().play(0, { x: 5, y: 0 });
@@ -185,5 +188,84 @@ describe('oyun sonunda yuksek skor', () => {
     expect(accepted).toBe(true);
     expect(useGameStore.getState().status).toBe('gameOver');
     expect(useGameStore.getState().highScore).toBeGreaterThanOrEqual(12345);
+  });
+});
+
+describe('esnaf replikleri', () => {
+  it('yeni oyunda esnaf karsilar', () => {
+    expect(useGameStore.getState().esnaf?.event).toBe('start');
+  });
+
+  it('siradan hamle mevcut repligi degistirmez', () => {
+    const before = useGameStore.getState().esnaf;
+    const index = firstFilled(useGameStore.getState().tray);
+
+    useGameStore.getState().play(index, firstFit(index));
+
+    expect(useGameStore.getState().esnaf).toBe(before);
+  });
+
+  it('her yeni replik farkli bir kimlik tasir (UI yeniden tetiklenir)', () => {
+    const first = useGameStore.getState().esnaf?.id;
+    useGameStore.getState().newGame(SEED);
+
+    expect(useGameStore.getState().esnaf?.id).not.toBe(first);
+  });
+});
+
+describe('cay molasi', () => {
+  const deadBoard = () => {
+    const diagonal = Array.from({ length: BOARD.ROWS }, (_, y) => [y % BOARD.COLS, y] as const);
+    return Array.from({ length: BOARD.ROWS }, (_, y) =>
+      Array.from({ length: BOARD.COLS }, (_, x) =>
+        diagonal.some(([ex, ey]) => ex === x && ey === y) ? null : 1,
+      ),
+    );
+  };
+
+  it('oyun surerken reddedilir', () => {
+    expect(useGameStore.getState().teaBreak()).toBe(false);
+  });
+
+  it('bitmis oyunu devam ettirir, hakki duser ve esnaf konusur', () => {
+    useGameStore.setState({ board: deadBoard(), status: 'gameOver', teaBreaksLeft: 1 });
+
+    expect(useGameStore.getState().teaBreak()).toBe(true);
+    expect(useGameStore.getState().status).toBe('playing');
+    expect(useGameStore.getState().teaBreaksLeft).toBe(0);
+    expect(useGameStore.getState().esnaf?.event).toBe('teaBreak');
+  });
+
+  it('hak yoksa reddedilir', () => {
+    useGameStore.setState({ board: deadBoard(), status: 'gameOver', teaBreaksLeft: 0 });
+
+    expect(useGameStore.getState().teaBreak()).toBe(false);
+    expect(useGameStore.getState().status).toBe('gameOver');
+  });
+
+  it('saf reducer ile ayni tahtayi uretir', () => {
+    useGameStore.setState({ board: deadBoard(), status: 'gameOver', teaBreaksLeft: 1 });
+    const expected = takeTeaBreak(useGameStore.getState()).board;
+
+    useGameStore.getState().teaBreak();
+
+    expect(useGameStore.getState().board).toEqual(expected);
+  });
+
+  it('mola sonrasi durum diske yazilir', () => {
+    useGameStore.setState({ board: deadBoard(), status: 'gameOver', teaBreaksLeft: 1 });
+    useGameStore.getState().teaBreak();
+
+    expect(loadGame(getAppStore())?.teaBreaksLeft).toBe(0);
+  });
+});
+
+describe('titresim ayari', () => {
+  it('acilip kapatilabilir ve durumda yansir', () => {
+    useGameStore.getState().setHapticsEnabled(false);
+    expect(useGameStore.getState().hapticsEnabled).toBe(false);
+
+    useGameStore.getState().setHapticsEnabled(true);
+    expect(useGameStore.getState().hapticsEnabled).toBe(true);
   });
 });

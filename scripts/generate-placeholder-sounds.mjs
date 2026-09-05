@@ -85,6 +85,14 @@ const SOUNDS = {
   invalid: tone([150, 120], 0.14),
   // Oyun sonu: inen dortlu
   gameOver: tone([540, 430, 340, 240], 0.75),
+  // Cini (tek renkli cizgi): cay bardagi cinlamasi gibi tiz, parlak bir ping
+  cini: tone([1320, 1760], 0.32),
+  // Seviye atladi: vapur dudugu gibi alcak, uzun ve yukselen
+  levelUp: tone([220, 330, 440], 0.55),
+  // Yeni rekor: yukselen besli fanfar
+  record: tone([523, 659, 784, 1047, 1319], 0.7),
+  // Cay molasi: yumusak, sakinlestirici inis-cikis
+  teaBreak: tone([392, 494, 392], 0.45),
 };
 
 mkdirSync(OUT_DIR, { recursive: true });

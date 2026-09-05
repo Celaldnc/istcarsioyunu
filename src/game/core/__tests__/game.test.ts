@@ -141,13 +141,18 @@ describe('playPiece', () => {
       lastClear: { rows: [], cols: [] },
       lastGain: 0,
       comboStreak: 0,
+      lastCini: { rows: [], cols: [] },
+      teaBreaksLeft: 1,
     };
 
     const next = playPiece(state, 0, { x: BOARD.COLS - 1, y: 0 });
 
     expect(next.lastClear).toEqual({ rows: [0], cols: [] });
-    // Tek satir + tahta tamamen bosaldi -> perfect clear bonusu
-    expect(next.score).toBe(SCORING.POINTS_PER_LINE + SCORING.PERFECT_CLEAR_BONUS);
+    // Tek renkli satir -> Cini; tek satir + tahta tamamen bosaldi -> perfect clear
+    expect(next.lastCini).toEqual({ rows: [0], cols: [] });
+    expect(next.score).toBe(
+      SCORING.POINTS_PER_LINE + SCORING.CINI_BONUS + SCORING.PERFECT_CLEAR_BONUS,
+    );
     expect(next.lastGain).toBe(next.score);
   });
 
@@ -213,6 +218,8 @@ describe('hamlenin oyunu bitirmesi', () => {
       lastClear: { rows: [], cols: [] },
       lastGain: 0,
       comboStreak: 0,
+      lastCini: { rows: [], cols: [] },
+      teaBreaksLeft: 1,
     };
 
     const next = playPiece(state, 0, { x: 5, y: 0 });
