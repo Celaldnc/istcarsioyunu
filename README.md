@@ -117,16 +117,17 @@ Rakip analizinin özeti: Block Blast'ın tutunması kuraldan değil **his**ten
 (rekor çubuğu, başlangıçta "ayarlanmış şans", abartılı geri bildirim), Woodoku'nun
 farkı **ses**ten geliyor; 1 numaralı şikâyet **reklam**. Buna göre eklenenler:
 
-| Mekanik             | Ne yapar                                                                                          | Nerede                          |
-| ------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------- |
-| **Çini bonusu**     | Tek renkli bir çizgi temizlemek +50. Renk türde ilk kez bir strateji boyutu                       | `core/board.ts monochromeLines` |
-| **Yapışkan renk**   | Tepsi içi parça %45 olasılıkla öncekinin rengini alır; Çini kurulabilir olsun. rng tüketimi sabit | `core/pieces.ts pickColor`      |
-| **Kolay başlangıç** | İlk tepsi yalnızca küçük şekiller ("engineered luck")                                             | `core/pieces.ts STARTER_*`      |
-| **Çay molası**      | Oyun başına 1 ücretsiz devam: en dolu 2 satır + 2 sütun boşalır. Rakipler bunu reklama satıyor    | `core/game.ts takeTeaBreak`     |
-| **Çarşı esnafı**    | Yalnızca "an"larda konuşan karakter (rekor, Çini, combo, sıkışma…). Sıradan hamlede susar         | `data/esnaf.ts`                 |
-| **Rekor çubuğu**    | "Rekora N kaldı" → "Yeni rekor!"                                                                  | `components/RecordBar.tsx`      |
-| **Efektler**        | Çizgi parlaması + tema renginde parçacıklar (Skia + Reanimated, UI thread), uçan "+40 Çini!"      | `engine/ClearBurst.tsx`         |
-| **Titreşim**        | Olaya göre hafif/orta/ağır; web'de kapalı; ayarlardan kapatılabilir                               | `game/haptics/`                 |
+| Mekanik                  | Ne yapar                                                                                                                                                                                         | Nerede                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- |
+| **Çini bonusu**          | Tek renkli bir çizgi temizlemek +50. Renk türde ilk kez bir strateji boyutu                                                                                                                      | `core/board.ts monochromeLines` |
+| **Yapışkan renk**        | Tepsi içi parça %45 olasılıkla öncekinin rengini alır; Çini kurulabilir olsun. rng tüketimi sabit                                                                                                | `core/pieces.ts pickColor`      |
+| **Kolay başlangıç**      | İlk tepsi yalnızca küçük şekiller ("engineered luck")                                                                                                                                            | `core/pieces.ts STARTER_*`      |
+| **Çay molası**           | Oyun başına 1 ücretsiz devam: en dolu 2 satır + 2 sütun boşalır. Rakipler bunu reklama satıyor                                                                                                   | `core/game.ts takeTeaBreak`     |
+| **Çarşı esnafı**         | Yalnızca "an"larda konuşan karakter (rekor, Çini, combo, sıkışma…). Sıradan hamlede susar                                                                                                        | `data/esnaf.ts`                 |
+| **Rekor çubuğu**         | "Rekora N kaldı" → "Yeni rekor!"                                                                                                                                                                 | `components/RecordBar.tsx`      |
+| **Efektler**             | Çizgi parlaması + tema renginde parçacıklar (Skia + Reanimated, UI thread), uçan "+40 Çini!"                                                                                                     | `engine/ClearBurst.tsx`         |
+| **Çarşı eşyası bloklar** | Her renk kimliği bir eşya: simit (halka+susam), çay bardağı, nazar boncuğu, lokum, fıstık, dövme bakır. Skia vektörü, resim yok; tema 6 renk + eşya listesi tanımlar, tonlar `shade()` ile türer | `engine/CellSprite.tsx`         |
+| **Titreşim**             | Olaya göre hafif/orta/ağır; web'de kapalı; ayarlardan kapatılabilir                                                                                                                              | `game/haptics/`                 |
 
 **Yol haritası (öncelik sırasıyla):** Günün Çarşısı (tarih seed'i hazır) →
 İstanbul Yolculuğu (semt seviyeleri + kartpostal koleksiyonu, temaların
