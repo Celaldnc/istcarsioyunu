@@ -1,4 +1,5 @@
 import { Canvas, RoundedRect } from '@shopify/react-native-skia';
+import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { BOARD, TRAY } from '@/constants/config';
@@ -71,7 +72,7 @@ function TraySlot({ piece, index, layout, theme }: TraySlotProps) {
  * bosalir ama yerini korur, boylece tepsi yerlesimi hamle sirasinda zipla-
  * mamis olur.
  */
-export function PieceTray({ pieces, layout, theme }: PieceTrayProps) {
+function PieceTrayImpl({ pieces, layout, theme }: PieceTrayProps) {
   return (
     <View style={styles.row}>
       {Array.from({ length: TRAY.PIECE_COUNT }, (_, index) => (
@@ -92,3 +93,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
+// Tepsi yalnizca hamle sonrasi degisir; surukleme karelerinde yeniden
+// render olmasi icin bir neden yok.
+export const PieceTray = memo(PieceTrayImpl);

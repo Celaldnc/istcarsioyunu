@@ -1,4 +1,5 @@
 import { Canvas, RoundedRect } from '@shopify/react-native-skia';
+import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { BOARD } from '@/constants/config';
@@ -21,7 +22,7 @@ interface GameCanvasProps {
  * Bu bilesen DURUM TUTMAZ ve oyun mantigi ICERMEZ; aldigi tahtayi ciz, o kadar.
  * Mantik src/game/core icinde ve oradan RN import etmek eslint ile yasak.
  */
-export function GameCanvas({ board, layout, theme }: GameCanvasProps) {
+function GameCanvasImpl({ board, layout, theme }: GameCanvasProps) {
   return (
     <View
       accessible
@@ -55,3 +56,13 @@ export function GameCanvas({ board, layout, theme }: GameCanvasProps) {
 const styles = StyleSheet.create({
   container: { width: '100%' },
 });
+
+/**
+ * memo ZORUNLU, susleme degil.
+ *
+ * Surukleme sirasinda PlayArea her hareket olayinda yeniden render oluyor
+ * ama board/layout/theme referanslari degismiyor. memo olmadan her karede
+ * 80 hucre icin cellOrigin + colorFor + createElement calisir ve React 80
+ * host node'unu Skia reconciler'inda diff'ler.
+ */
+export const GameCanvas = memo(GameCanvasImpl);
