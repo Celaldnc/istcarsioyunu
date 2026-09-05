@@ -15,21 +15,35 @@ import { BOARD, THEME, TRAY } from '@/constants/config';
  *   geometriyle geri gelirdi.
  * - rng FONKSIYONU saklanmaz. seed + o ana kadar cekilen parca sayisi yeterli;
  *   uretec geri yuklerken ayni noktaya sarilir.
- * - Her cozumleme adimi dogrulanir. Bozuk veya eski surumlu bir kayit null
- *   dondurur; cagiran taraf yeni oyun baslatir. Kaydin oyunu cokertmemesi,
- *   kaydi kurtarmaktan onemli.
+ * - Her cozumleme adimi dogrulanir. Bozuk bir kayit null dondurur; cagiran
+ *   taraf yeni oyun baslatir. Kaydin oyunu cokertmemesi, kaydi kurtarmaktan
+ *   onemli.
+ *
+ * SURUMLEME
+ * Eski surumler ATILMAZ, GOC ETTIRILIR. Oyuncunun devam eden oyununu bir
+ * guncelleme yuzunden kaybetmesi kabul edilemez. Her surum icin tip DONDURULUR
+ * (SavedGameV1'e bir daha dokunulmaz) ve MIGRATIONS zinciri eksik alanlari
+ * varsayilanla doldurur. Dogrulama yalnizca GUNCEL sema icin yazilir; goc
+ * zinciri her kaydi once guncel semaya cikarir.
+ *
+ * SAVE_VERSION su durumlarda artirilmalidir:
+ *  - Yeni alan eklendiginde
+ *  - Bir alanin anlami degistiginde
+ *  - SEKIL GEOMETRISI degistiginde (ayni id, farkli hucreler): eski kayitlar
+ *    yeni geometriyle yanlis yorumlanir.
  */
 
-/** Kayit bicimi surumu. Uyusmayan kayitlar sessizce atilir. */
-export const SAVE_VERSION = 1;
+/** Guncel kayit bicimi surumu. */
+export const SAVE_VERSION = 2;
 
 interface SavedSlot {
   readonly shapeId: string;
   readonly colorId: number;
 }
 
-interface SavedGame {
-  readonly version: number;
+/** v1 — DONDURULDU. Yeni alan eklemeyin; yeni surum acin. */
+interface SavedGameV1 {
+  readonly version: 1;
   readonly board: readonly (readonly Cell[])[];
   readonly tray: readonly (SavedSlot | null)[];
   readonly score: number;
@@ -37,6 +51,25 @@ interface SavedGame {
   readonly piecesDrawn: number;
   readonly status: GameStatus;
 }
+
+/** v2 — ardisik temizleme serisi eklendi. */
+interface SavedGameV2 extends Omit<SavedGameV1, 'version'> {
+  readonly version: 2;
+  readonly comboStreak: number;
+}
+
+type SavedGame = SavedGameV2;
+
+/**
+ * Surumden bir sonrakine gecis. Eksik alanlar VARSAYILANLA doldurulur;
+ * eski kaydin dogru yorumlanabilmesi icin baska bir varsayim yapilmaz.
+ */
+const MIGRATIONS: Readonly<
+  Record<number, (raw: Record<string, unknown>) => Record<string, unknown>>
+> = {
+  // v1'de seri kavrami yoktu; sifirdan baslamak dogru varsayilan.
+  1: (raw) => ({ ...raw, version: 2, comboStreak: 0 }),
+};
 
 export function serializeGame(state: GameState): string {
   const payload: SavedGame = {
@@ -49,6 +82,7 @@ export function serializeGame(state: GameState): string {
     seed: state.seed,
     piecesDrawn: state.piecesDrawn,
     status: state.status,
+    comboStreak: state.comboStreak,
   };
 
   return JSON.stringify(payload);
@@ -80,6 +114,9 @@ const isColorId = (value: unknown): value is number =>
  */
 const isPiecesDrawn = (value: unknown): value is number =>
   Number.isInteger(value) && (value as number) >= 0 && (value as number) % TRAY.PIECE_COUNT === 0;
+
+const isStreak = (value: unknown): value is number =>
+  Number.isInteger(value) && (value as number) >= 0;
 
 function parseBoard(value: unknown): Board | null {
   if (!Array.isArray(value) || value.length !== BOARD.ROWS) {
@@ -138,6 +175,22 @@ function parseTray(value: unknown): (Piece | undefined)[] | null {
   return tray;
 }
 
+/** Kaydi guncel semaya cikarir; zincir kirilirsa null. */
+function migrate(raw: Record<string, unknown>): Record<string, unknown> | null {
+  let current = raw;
+
+  while (typeof current.version === 'number' && current.version < SAVE_VERSION) {
+    const step = MIGRATIONS[current.version];
+    if (step === undefined) {
+      // Zincirde eksik halka: kaydi zorlamaktansa atmak guvenli.
+      return null;
+    }
+    current = step(current);
+  }
+
+  return current;
+}
+
 export function deserializeGame(json: string): GameState | null {
   let raw: unknown;
   try {
@@ -146,14 +199,25 @@ export function deserializeGame(json: string): GameState | null {
     return null;
   }
 
-  if (typeof raw !== 'object' || raw === null) {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     return null;
   }
 
-  const saved = raw as Partial<SavedGame>;
-  if (saved.version !== SAVE_VERSION) {
+  const version = (raw as Record<string, unknown>).version;
+  if (!Number.isInteger(version) || (version as number) < 1) {
     return null;
   }
+  // Ileri surumden dusme korumasi: bilmedigimiz alanlari yorumlayamayiz.
+  if ((version as number) > SAVE_VERSION) {
+    return null;
+  }
+
+  const migrated = migrate(raw as Record<string, unknown>);
+  if (migrated === null) {
+    return null;
+  }
+
+  const saved = migrated as unknown as Partial<SavedGame>;
 
   const board = parseBoard(saved.board);
   const tray = parseTray(saved.tray);
@@ -164,7 +228,8 @@ export function deserializeGame(json: string): GameState | null {
     !isFiniteNumber(saved.score) ||
     !isFiniteNumber(saved.seed) ||
     !isPiecesDrawn(saved.piecesDrawn) ||
-    !isStatus(saved.status)
+    !isStatus(saved.status) ||
+    !isStreak(saved.comboStreak)
   ) {
     return null;
   }
@@ -183,6 +248,7 @@ export function deserializeGame(json: string): GameState | null {
     seed: saved.seed,
     piecesDrawn: saved.piecesDrawn,
     status,
+    comboStreak: saved.comboStreak,
     // Animasyon ipuclari gecicidir; geri yuklerken sifirlanir.
     lastClear: { rows: [], cols: [] },
     lastGain: 0,

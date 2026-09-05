@@ -1,8 +1,14 @@
 import { canPlace, createBoard } from '../board';
-import { RNG_CALLS_PER_PIECE, SHAPES, generatePieceSet, shapeById } from '../pieces';
+import {
+  RNG_CALLS_PER_PIECE,
+  SHAPES,
+  generatePieceSet,
+  shapeById,
+  weightedShapesForLevel,
+} from '../pieces';
 import { advance, createRng } from '../rng';
 
-import { PIECES, THEME, TRAY } from '@/constants/config';
+import { LEVEL, PIECES, THEME, TRAY } from '@/constants/config';
 
 describe('SHAPES katalogu', () => {
   it('spec/`Block Blast` standardini karsilayacak kadar sekil icerir', () => {
@@ -130,5 +136,75 @@ describe('RNG_CALLS_PER_PIECE invarianti', () => {
     advance(rng, 4 * RNG_CALLS_PER_PIECE);
 
     expect(generatePieceSet(rng, 2)).toEqual(full.slice(4));
+  });
+});
+
+describe('seviyeye gore zorluk egrisi', () => {
+  const totalWeight = (level: number) =>
+    weightedShapesForLevel(level).reduce((sum, item) => sum + item.weight, 0);
+
+  const shareOf = (level: number, ids: readonly string[]) => {
+    const weighted = weightedShapesForLevel(level);
+    const part = weighted
+      .filter((item) => ids.includes(item.value.id))
+      .reduce((sum, item) => sum + item.weight, 0);
+    return part / totalWeight(level);
+  };
+
+  // Pratikte her zaman sigan parcalar: tek kare ve cizgiler.
+  const EASY = ['dot', 'line-h2', 'line-v2', 'line-h3', 'line-v3'];
+
+  it('1. seviyede kolay parcalarin payi yuksektir', () => {
+    expect(shareOf(1, EASY)).toBeGreaterThan(0.5);
+  });
+
+  it('tavan seviyede kolay parcalarin payi belirgin duser', () => {
+    // En az 15 puanlik bir dusus: zorluk artisi hissedilir olmali.
+    expect(shareOf(LEVEL.MAX, EASY)).toBeLessThan(shareOf(1, EASY) - 0.15);
+  });
+
+  it('kolay parcalarin payi seviye ile monoton azalir', () => {
+    let previous = Number.POSITIVE_INFINITY;
+    for (let level = 1; level <= LEVEL.MAX; level += 1) {
+      const share = shareOf(level, EASY);
+      expect(share).toBeLessThanOrEqual(previous);
+      previous = share;
+    }
+  });
+
+  it('en zor parca (plus) seviye ile siklesir', () => {
+    expect(shareOf(LEVEL.MAX, ['plus'])).toBeGreaterThan(shareOf(1, ['plus']));
+  });
+
+  it('hicbir seviyede agirlik negatif olmaz', () => {
+    for (let level = 1; level <= LEVEL.MAX; level += 1) {
+      for (const item of weightedShapesForLevel(level)) {
+        expect(item.weight).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('her seviyede tum sekiller listede kalir', () => {
+    for (let level = 1; level <= LEVEL.MAX; level += 1) {
+      expect(weightedShapesForLevel(level)).toHaveLength(SHAPES.length);
+    }
+  });
+
+  it('seviye parca uretimini gercekten etkiler', () => {
+    const easy = generatePieceSet(createRng(2026), 60, 1).map((p) => p.shape.id);
+    const hard = generatePieceSet(createRng(2026), 60, LEVEL.MAX).map((p) => p.shape.id);
+
+    expect(easy).not.toEqual(hard);
+  });
+
+  it('seviye rng tuketimini DEGISTIRMEZ (kayit uyumlulugu)', () => {
+    // Aksi halde ayni seed + piecesDrawn farkli seviyelerde farkli noktaya
+    // sarilirdi ve geri yukleme bozulurdu.
+    const a = createRng(7);
+    generatePieceSet(a, 4, 1);
+    const b = createRng(7);
+    generatePieceSet(b, 4, LEVEL.MAX);
+
+    expect(a()).toBe(b());
   });
 });

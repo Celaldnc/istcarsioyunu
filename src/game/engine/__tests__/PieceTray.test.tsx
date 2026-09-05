@@ -62,3 +62,34 @@ describe('PieceTray', () => {
     expect(rect?.props.x).toBeCloseTo(expectedX);
   });
 });
+
+describe('suruklenen yuvanin soluklastirilmasi', () => {
+  it('suruklenen yuva soluk cizilir', async () => {
+    await render(
+      <PieceTray pieces={[pieceOf('dot')]} layout={layout} theme={CARSI} dimmedIndex={0} />,
+    );
+
+    const [rect] = screen.getAllByTestId('skia-rounded-rect');
+    expect(rect?.props.opacity).toBeLessThan(1);
+  });
+
+  it('suruklenmeyen yuvalar tam opaklikta kalir', async () => {
+    await render(
+      <PieceTray
+        pieces={[pieceOf('dot'), pieceOf('dot')]}
+        layout={layout}
+        theme={CARSI}
+        dimmedIndex={0}
+      />,
+    );
+
+    const rects = screen.getAllByTestId('skia-rounded-rect');
+    expect(rects[1]?.props.opacity).toBe(1);
+  });
+
+  it('dimmedIndex verilmezse hicbir yuva soluklasmaz', async () => {
+    await render(<PieceTray pieces={[pieceOf('dot')]} layout={layout} theme={CARSI} />);
+
+    expect(screen.getAllByTestId('skia-rounded-rect')[0]?.props.opacity).toBe(1);
+  });
+});

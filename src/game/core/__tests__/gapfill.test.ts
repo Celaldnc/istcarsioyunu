@@ -187,6 +187,7 @@ describe('G7 playPiece skor akisi (deterministik kurulum)', () => {
     status: 'playing',
     lastClear: { rows: [], cols: [] },
     lastGain: 0,
+    comboStreak: 0,
   });
 
   it('son bosluga yerlestirme satiri temizler, puan ve lastGain verir', () => {

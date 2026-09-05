@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import { GHOST_TEST_ID, GhostOverlay } from '../GhostOverlay';
 
@@ -46,7 +47,11 @@ describe('GhostOverlay', () => {
   it('dokunuslari gecirir (altindaki alani engellemez)', async () => {
     await render(<GhostOverlay cells={cells} valid layout={layout} theme={CARSI} />);
 
-    expect(screen.getByTestId(GHOST_TEST_ID).props.pointerEvents).toBe('none');
+    // style bir dizi ([overlay, {height}]); duzlestirmek gerekiyor.
+    const style = StyleSheet.flatten(
+      screen.getByTestId(GHOST_TEST_ID).props.style as StyleProp<ViewStyle>,
+    );
+    expect(style.pointerEvents).toBe('none');
   });
 
   it('bos hucre listesinde cizim yapmaz', async () => {

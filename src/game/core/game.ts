@@ -9,6 +9,7 @@ import {
 } from './board';
 import { RNG_CALLS_PER_PIECE, generatePieceSet } from './pieces';
 import { createRng } from './rng';
+import { levelForScore } from './level';
 import { computeScore } from './score';
 import type { Board, FullLines, Piece, Point } from './types';
 
@@ -37,6 +38,11 @@ export interface GameState {
   readonly lastClear: FullLines;
   /** Son hamlenin getirdigi puan — skor animasyonu icin. */
   readonly lastGain: number;
+  /**
+   * Ardisik temizleme serisi: kac hamledir ust uste cizgi temizleniyor.
+   * Temizleme yapmayan bir hamle bunu sifirlar.
+   */
+  readonly comboStreak: number;
 }
 
 const NO_LINES: FullLines = { rows: [], cols: [] };
@@ -48,8 +54,12 @@ const NO_LINES: FullLines = { rows: [], cols: [] };
  * oyunda tepsi yenileme O(n^2)'ye cikiyordu ve bu is hamlenin bittigi anda,
  * JS thread'inde yapiliyor.
  */
-function drawTray(seed: number, piecesDrawn: number): Piece[] {
-  return generatePieceSet(createRng(seed, piecesDrawn * RNG_CALLS_PER_PIECE), TRAY.PIECE_COUNT);
+function drawTray(seed: number, piecesDrawn: number, level: number): Piece[] {
+  return generatePieceSet(
+    createRng(seed, piecesDrawn * RNG_CALLS_PER_PIECE),
+    TRAY.PIECE_COUNT,
+    level,
+  );
 }
 
 /** Tepside kalan (kullanilmamis) parcalar. */
@@ -58,7 +68,7 @@ function remainingPieces(tray: readonly (Piece | undefined)[]): Piece[] {
 }
 
 export function startGame(seed: number, board: Board = createBoard()): GameState {
-  const tray = drawTray(seed, 0);
+  const tray = drawTray(seed, 0, 1);
 
   return {
     board,
@@ -69,6 +79,7 @@ export function startGame(seed: number, board: Board = createBoard()): GameState
     status: isGameOver(board, tray) ? 'gameOver' : 'playing',
     lastClear: NO_LINES,
     lastGain: 0,
+    comboStreak: 0,
   };
 }
 
@@ -92,10 +103,13 @@ export function playPiece(state: GameState, trayIndex: number, origin: Point): G
   const lines = findFullLines(placed);
   const cleared = applyClears(placed, lines);
 
-  const gain = computeScore({
+  const scored = computeScore({
     clearedLines: lines,
     boardEmptyAfterClears: isBoardEmpty(cleared),
-  }).total;
+    streak: state.comboStreak,
+  });
+  const gain = scored.total;
+  const score = state.score + gain;
 
   let tray: readonly (Piece | undefined)[] = state.tray.map((slot, index) =>
     index === trayIndex ? undefined : slot,
@@ -103,8 +117,9 @@ export function playPiece(state: GameState, trayIndex: number, origin: Point): G
   let piecesDrawn = state.piecesDrawn;
 
   // Tepsi tamamen bosaldiginda yenilenir; Block Blast akisi budur.
+  // Zorluk guncel seviyeden turetilir: oyun ilerledikce zor parcalar sikleşir.
   if (remainingPieces(tray).length === 0) {
-    tray = drawTray(state.seed, piecesDrawn);
+    tray = drawTray(state.seed, piecesDrawn, levelForScore(score));
     piecesDrawn += TRAY.PIECE_COUNT;
   }
 
@@ -112,12 +127,18 @@ export function playPiece(state: GameState, trayIndex: number, origin: Point): G
     ...state,
     board: cleared,
     tray,
-    score: state.score + gain,
+    score,
     piecesDrawn,
     status: isGameOver(cleared, remainingPieces(tray)) ? 'gameOver' : 'playing',
     lastClear: lines,
     lastGain: gain,
+    comboStreak: scored.nextStreak,
   };
+}
+
+/** Guncel seviye (skordan turetilir). */
+export function currentLevel(state: GameState): number {
+  return levelForScore(state.score);
 }
 
 /** Ayni seed ile bastan baslatir (Daily modunda tekrar denemek icin). */

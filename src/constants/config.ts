@@ -73,11 +73,37 @@ export const DRAG = {
   LIFT: 1.5,
 } as const;
 
+export const LEVEL = {
+  /** Bir seviye atlamak icin gereken puan. */
+  POINTS_PER_LEVEL: 400,
+  /**
+   * En yuksek seviye. Zorluk burada tavan yapar; sonsuza kadar artmasi
+   * oyunu oynanamaz kilardi.
+   */
+  MAX: 10,
+} as const;
+
 export const SCORING = {
   /** Temizlenen her satir/sutun icin taban puan */
   POINTS_PER_LINE: 10,
   /** Tray'deki tum parcalar kullanilinca verilen bonus */
   PERFECT_CLEAR_BONUS: 100,
+} as const;
+
+export const COMBO = {
+  /**
+   * Ardisik temizleme serisinde her adimda carpana eklenen deger.
+   *
+   * "Ayni anda 2+ cizgi" combo'su olcumde 48 hamlede 1 tetikleniyordu.
+   * Hamlelerin ~%25'i tek cizgi temizledigi icin SERI combo'su cok daha sik
+   * kuruluyor ve zincir kurmayi odullendiriyor.
+   *
+   * Carpan degerleri kesirli olabilir; bu yuzden SCORING'den ayri duruyor
+   * (orada tum degerlerin tamsayi olmasi bir invariant).
+   */
+  STREAK_STEP: 0.5,
+  /** Seri carpaninin tavani. */
+  MAX_STREAK_MULTIPLIER: 4,
 } as const;
 
 export const TIME_ATTACK = {

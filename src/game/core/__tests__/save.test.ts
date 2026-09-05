@@ -87,8 +87,14 @@ describe('serializeGame / deserializeGame', () => {
       expect(deserializeGame('"metin"')).toBeNull();
     });
 
-    it('eski surum', () => {
-      expect(deserializeGame(corrupt((p) => (p.version = SAVE_VERSION - 1)))).toBeNull();
+    it('bilinmeyen ileri surum reddedilir (dusme korumasi)', () => {
+      expect(deserializeGame(corrupt((p) => (p.version = SAVE_VERSION + 1)))).toBeNull();
+    });
+
+    it('gecersiz surum degeri reddedilir', () => {
+      expect(deserializeGame(corrupt((p) => (p.version = 0)))).toBeNull();
+      expect(deserializeGame(corrupt((p) => (p.version = 'iki')))).toBeNull();
+      expect(deserializeGame(corrupt((p) => (p.version = 1.5)))).toBeNull();
     });
 
     it('surum alani yok', () => {
@@ -253,5 +259,51 @@ describe('deger araligi dogrulamalari', () => {
 
   it('negatif piecesDrawn gecersizdir', () => {
     expect(deserializeGame(corrupt((p) => (p.piecesDrawn = -3)))).toBeNull();
+  });
+});
+
+describe('surum gocu', () => {
+  /** Guncel kaydi v1 bicimine dusuren yardimci. */
+  const asV1 = (): Record<string, unknown> => {
+    const parsed = JSON.parse(serializeGame(startGame(SEED))) as Record<string, unknown>;
+    delete parsed.comboStreak;
+    parsed.version = 1;
+    return parsed;
+  };
+
+  it('v1 kaydi ATILMAZ, goc ettirilir', () => {
+    // Oyuncunun devam eden oyununu bir guncelleme yuzunden kaybetmesi
+    // kabul edilemez.
+    const restored = deserializeGame(JSON.stringify(asV1()));
+
+    expect(restored).not.toBeNull();
+    expect(restored?.seed).toBe(SEED);
+  });
+
+  it('v1 kaydinda olmayan alan varsayilanla doldurulur', () => {
+    expect(deserializeGame(JSON.stringify(asV1()))?.comboStreak).toBe(0);
+  });
+
+  it('v1 kaydinin tahtasi ve tepsisi korunur', () => {
+    const original = startGame(SEED);
+    const restored = deserializeGame(JSON.stringify(asV1()));
+
+    expect(restored?.board).toEqual(original.board);
+    expect(restored?.tray.map((p) => p?.shape.id)).toEqual(original.tray.map((p) => p?.shape.id));
+  });
+
+  it('gocten sonra da dogrulama uygulanir (bozuk v1 yine reddedilir)', () => {
+    const broken = asV1();
+    broken.board = 'tahta';
+
+    expect(deserializeGame(JSON.stringify(broken))).toBeNull();
+  });
+
+  it('negatif seri degeri reddedilir', () => {
+    expect(deserializeGame(corrupt((p) => (p.comboStreak = -1)))).toBeNull();
+  });
+
+  it('kesirli seri degeri reddedilir', () => {
+    expect(deserializeGame(corrupt((p) => (p.comboStreak = 1.5)))).toBeNull();
   });
 });

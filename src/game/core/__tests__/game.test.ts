@@ -140,6 +140,7 @@ describe('playPiece', () => {
       status: 'playing',
       lastClear: { rows: [], cols: [] },
       lastGain: 0,
+      comboStreak: 0,
     };
 
     const next = playPiece(state, 0, { x: BOARD.COLS - 1, y: 0 });
@@ -211,6 +212,7 @@ describe('hamlenin oyunu bitirmesi', () => {
       status: 'playing',
       lastClear: { rows: [], cols: [] },
       lastGain: 0,
+      comboStreak: 0,
     };
 
     const next = playPiece(state, 0, { x: 5, y: 0 });

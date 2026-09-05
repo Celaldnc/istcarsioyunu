@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { GameCanvas } from './GameCanvas';
+import { DragPiece } from './DragPiece';
 import { GhostOverlay } from './GhostOverlay';
 import { PieceTray } from './PieceTray';
 
@@ -73,6 +74,8 @@ export function PlayArea({ board, tray, width, theme, maxHeight, onDrop }: PlayA
     dragRef.current = next;
     setDrag(next);
   }, []);
+
+  const draggedPiece = drag === null ? null : (tray[drag.index] ?? null);
 
   const preview = useMemo(() => {
     if (drag === null) {
@@ -172,7 +175,18 @@ export function PlayArea({ board, tray, width, theme, maxHeight, onDrop }: PlayA
 
         <View style={{ height: LAYOUT.BOARD_TRAY_GAP }} />
 
-        <PieceTray pieces={tray} layout={trayLayout} theme={theme} />
+        <PieceTray pieces={tray} layout={trayLayout} theme={theme} dimmedIndex={drag?.index} />
+
+        {/* Suruklenen parca parmagi takip eder. Hayaletle ayni matematigi
+            kullandigi icin ikisi birbirinden kaymaz. */}
+        {draggedPiece !== null && drag !== null ? (
+          <DragPiece
+            piece={draggedPiece}
+            pointer={{ x: drag.x, y: drag.y }}
+            layout={boardLayout}
+            theme={theme}
+          />
+        ) : null}
       </View>
     </GestureDetector>
   );

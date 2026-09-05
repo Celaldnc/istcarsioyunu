@@ -1,3 +1,4 @@
+import { difficultyProgress } from './level';
 import { pickWeighted, type Rng, type WeightedItem } from './rng';
 import type { Piece, Shape } from './types';
 
@@ -15,12 +16,17 @@ interface ShapeSpec {
   readonly id: string;
   /** Dolu hucrelerin [x, y] koordinatlari. (0,0) baz alinir. */
   readonly cells: readonly (readonly [number, number])[];
-  /** Goreli cikma sikligi. Kucuk parcalar daha sik gelir ki oyun tikanmasin. */
+  /** 1. seviyedeki cikma sikligi. Kolay parcalar burada agir basar. */
   readonly weight: number;
+  /**
+   * Tavan seviyedeki cikma sikligi. Aradaki degerler seviyeye gore
+   * ara degerlenir; boylece zorluk oyun ilerledikce artar.
+   */
+  readonly hardWeight: number;
 }
 
 const SPECS: readonly ShapeSpec[] = [
-  { id: 'dot', cells: [[0, 0]], weight: 6 },
+  { id: 'dot', cells: [[0, 0]], weight: 6, hardWeight: 2 },
   {
     id: 'line-h2',
     cells: [
@@ -28,6 +34,7 @@ const SPECS: readonly ShapeSpec[] = [
       [1, 0],
     ],
     weight: 8,
+    hardWeight: 4,
   },
   {
     id: 'line-v2',
@@ -36,6 +43,7 @@ const SPECS: readonly ShapeSpec[] = [
       [0, 1],
     ],
     weight: 8,
+    hardWeight: 4,
   },
   {
     id: 'line-h3',
@@ -45,6 +53,7 @@ const SPECS: readonly ShapeSpec[] = [
       [2, 0],
     ],
     weight: 6,
+    hardWeight: 5,
   },
   {
     id: 'line-v3',
@@ -54,6 +63,7 @@ const SPECS: readonly ShapeSpec[] = [
       [0, 2],
     ],
     weight: 6,
+    hardWeight: 5,
   },
   {
     id: 'square',
@@ -64,6 +74,7 @@ const SPECS: readonly ShapeSpec[] = [
       [1, 1],
     ],
     weight: 6,
+    hardWeight: 5,
   },
   {
     id: 'corner',
@@ -73,6 +84,7 @@ const SPECS: readonly ShapeSpec[] = [
       [1, 1],
     ],
     weight: 5,
+    hardWeight: 5,
   },
   {
     id: 'l',
@@ -83,6 +95,7 @@ const SPECS: readonly ShapeSpec[] = [
       [1, 2],
     ],
     weight: 4,
+    hardWeight: 5,
   },
   {
     id: 't',
@@ -93,6 +106,7 @@ const SPECS: readonly ShapeSpec[] = [
       [1, 1],
     ],
     weight: 4,
+    hardWeight: 5,
   },
   {
     id: 's',
@@ -103,6 +117,7 @@ const SPECS: readonly ShapeSpec[] = [
       [1, 1],
     ],
     weight: 3,
+    hardWeight: 5,
   },
   {
     id: 'z',
@@ -113,6 +128,7 @@ const SPECS: readonly ShapeSpec[] = [
       [2, 1],
     ],
     weight: 3,
+    hardWeight: 5,
   },
   {
     id: 'plus',
@@ -127,6 +143,7 @@ const SPECS: readonly ShapeSpec[] = [
     // oluyordu; cikma olasiligi %3.4 olmasina ragmen. 3x3 pencerede 5 belirli
     // hucre isteyen tek sekil bu. Agirlik 2 -> 1.
     weight: 1,
+    hardWeight: 4,
   },
 ];
 
@@ -143,15 +160,29 @@ function toShape(spec: ShapeSpec): Shape {
 
 // Sekiller bir kez uretilir; hem katalog hem agirlikli liste ayni nesneleri
 // paylasir (indeksle eslestirmek tip iddiasi gerektirirdi).
-const ENTRIES = SPECS.map((spec) => ({ shape: toShape(spec), weight: spec.weight }));
+const ENTRIES = SPECS.map((spec) => ({
+  shape: toShape(spec),
+  weight: spec.weight,
+  hardWeight: spec.hardWeight,
+}));
 
 /** Oyundaki tum parca sekilleri. */
 export const SHAPES: readonly Shape[] = ENTRIES.map((entry) => entry.shape);
 
-const WEIGHTED_SHAPES: readonly WeightedItem<Shape>[] = ENTRIES.map((entry) => ({
-  value: entry.shape,
-  weight: entry.weight,
-}));
+/**
+ * Verilen seviyedeki agirlikli sekil listesi.
+ *
+ * Agirliklar kolay (1. seviye) ve zor (tavan) degerler arasinda ara
+ * degerlenir; boylece zorluk kademeli artar, birden siçramaz.
+ */
+export function weightedShapesForLevel(level: number): readonly WeightedItem<Shape>[] {
+  const t = difficultyProgress(level);
+
+  return ENTRIES.map((entry) => ({
+    value: entry.shape,
+    weight: entry.weight + (entry.hardWeight - entry.weight) * t,
+  }));
+}
 
 const SHAPE_INDEX = new Map(SHAPES.map((shape) => [shape.id, shape]));
 
@@ -171,9 +202,21 @@ export const RNG_CALLS_PER_PIECE = 2;
  * Ayni rng ayni diziyi verdigi icin Daily modunda tum oyuncular ayni
  * parcalari alir.
  */
-export function generatePieceSet(rng: Rng, count: number = TRAY.PIECE_COUNT): Piece[] {
+export function generatePieceSet(
+  rng: Rng,
+  count: number = TRAY.PIECE_COUNT,
+  /**
+   * Zorluk seviyesi. Agirliklar buna gore ara degerlenir.
+   *
+   * Daily modunda sabit bir seviye verilerek dizinin oyuncular arasinda
+   * ayrismasi onlenebilir; Classic'te skordan turetilir.
+   */
+  level = 1,
+): Piece[] {
+  const weighted = weightedShapesForLevel(level);
+
   return Array.from({ length: count }, () => ({
-    shape: pickWeighted(rng, WEIGHTED_SHAPES),
+    shape: pickWeighted(rng, weighted),
     colorId: Math.floor(rng() * THEME.PALETTE_SIZE),
   }));
 }

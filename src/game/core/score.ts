@@ -1,6 +1,6 @@
 import type { FullLines } from './types';
 
-import { SCORING } from '@/constants/config';
+import { COMBO, SCORING } from '@/constants/config';
 
 /**
  * Skor hesabi.
@@ -18,15 +18,25 @@ export interface ScoreInput {
   readonly clearedLines: FullLines;
   /** Temizleme uygulandiktan SONRA tahta tamamen bos mu? */
   readonly boardEmptyAfterClears: boolean;
+  /**
+   * Bu hamleden ONCEKI ardisik temizleme serisi (kac hamledir ust uste
+   * temizleniyor). Ilk temizlemede 0'dir.
+   */
+  readonly streak?: number;
 }
 
 export interface ScoreResult {
   /** Temizlenen toplam cizgi sayisi (satir + sutun). */
   readonly lineCount: number;
+  /** Ayni hamlede temizlenen cizgi sayisindan gelen carpan. */
   readonly comboMultiplier: number;
+  /** Ardisik temizleme serisinden gelen carpan. */
+  readonly streakMultiplier: number;
   readonly linePoints: number;
   readonly perfectClearBonus: number;
   readonly total: number;
+  /** Bu hamleden SONRAKI seri; cagiran taraf durumda saklar. */
+  readonly nextStreak: number;
 }
 
 /**
@@ -40,10 +50,30 @@ export function comboMultiplier(lineCount: number): number {
   return lineCount > 0 ? lineCount : 0;
 }
 
+/**
+ * Ardisik temizleme serisinden gelen carpan.
+ *
+ * "Ayni anda 2+ cizgi" combo'su olcumde 48 hamlede 1 tetikleniyordu; oyuncu
+ * carpani neredeyse hic gormuyordu. Hamlelerin ~%25'i tek cizgi temizledigi
+ * icin SERI combo'su cok daha sik kuruluyor ve zincir kurmayi odullendiriyor.
+ *
+ * streak: bu hamleden ONCEKI ardisik temizleme sayisi.
+ */
+export function streakMultiplier(streak: number): number {
+  if (!Number.isFinite(streak) || streak <= 0) {
+    return 1;
+  }
+  return Math.min(COMBO.MAX_STREAK_MULTIPLIER, 1 + streak * COMBO.STREAK_STEP);
+}
+
 export function computeScore(input: ScoreInput): ScoreResult {
   const lineCount = input.clearedLines.rows.length + input.clearedLines.cols.length;
   const multiplier = comboMultiplier(lineCount);
-  const linePoints = SCORING.POINTS_PER_LINE * lineCount * multiplier;
+  const streak = input.streak ?? 0;
+  const streakBonus = lineCount > 0 ? streakMultiplier(streak) : 1;
+
+  // Puanlar tamsayi tutulur; carpanlar kesirli olabilir.
+  const linePoints = Math.round(SCORING.POINTS_PER_LINE * lineCount * multiplier * streakBonus);
 
   // Bonus yalnizca bu hamlede bir sey temizlendiyse verilir. Aksi halde
   // oyunun ilk hamlesinden onceki bos tahta da bonus kazandirirdi.
@@ -53,8 +83,11 @@ export function computeScore(input: ScoreInput): ScoreResult {
   return {
     lineCount,
     comboMultiplier: multiplier,
+    streakMultiplier: streakBonus,
     linePoints,
     perfectClearBonus,
     total: linePoints + perfectClearBonus,
+    // Temizleme yapmayan hamle seriyi sifirlar.
+    nextStreak: lineCount > 0 ? streak + 1 : 0,
   };
 }

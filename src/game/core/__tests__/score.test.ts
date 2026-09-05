@@ -3,7 +3,7 @@ import { shapeById } from '../pieces';
 import { comboMultiplier, computeScore } from '../score';
 import type { Board, Piece } from '../types';
 
-import { SCORING } from '@/constants/config';
+import { COMBO, SCORING } from '@/constants/config';
 
 const boardFrom = (rows: string[]): Board =>
   rows.map((row) => [...row].map((ch) => (ch === '.' ? null : Number(ch))));
@@ -144,5 +144,63 @@ describe('bir hamlenin ucu uca akisi', () => {
 
     expect(score.total).toBe(0);
     expect(isBoardEmpty(afterPlace)).toBe(false);
+  });
+});
+
+describe('ardisik temizleme serisi', () => {
+  const clearOnce = (streak: number) =>
+    computeScore({ clearedLines: { rows: [0], cols: [] }, boardEmptyAfterClears: false, streak });
+
+  it('ilk temizlemede carpan yoktur', () => {
+    expect(clearOnce(0).streakMultiplier).toBe(1);
+  });
+
+  it('seri uzadikca carpan artar', () => {
+    expect(clearOnce(1).streakMultiplier).toBeGreaterThan(clearOnce(0).streakMultiplier);
+    expect(clearOnce(3).streakMultiplier).toBeGreaterThan(clearOnce(1).streakMultiplier);
+  });
+
+  it('carpan tavani asilmaz', () => {
+    expect(clearOnce(1000).streakMultiplier).toBe(COMBO.MAX_STREAK_MULTIPLIER);
+  });
+
+  it('temizleyen hamle seriyi bir artirir', () => {
+    expect(clearOnce(2).nextStreak).toBe(3);
+  });
+
+  it('temizlemeyen hamle seriyi SIFIRLAR', () => {
+    const result = computeScore({
+      clearedLines: { rows: [], cols: [] },
+      boardEmptyAfterClears: false,
+      streak: 5,
+    });
+
+    expect(result.nextStreak).toBe(0);
+    expect(result.streakMultiplier).toBe(1);
+  });
+
+  it('seri puani gercekten artirir', () => {
+    expect(clearOnce(3).total).toBeGreaterThan(clearOnce(0).total);
+  });
+
+  it('puanlar tamsayi kalir (carpanlar kesirli olsa da)', () => {
+    for (let streak = 0; streak <= 8; streak += 1) {
+      expect(Number.isInteger(clearOnce(streak).total)).toBe(true);
+    }
+  });
+
+  it('seri verilmezse sifir kabul edilir', () => {
+    const withoutStreak = computeScore({
+      clearedLines: { rows: [0], cols: [] },
+      boardEmptyAfterClears: false,
+    });
+
+    expect(withoutStreak.streakMultiplier).toBe(1);
+    expect(withoutStreak.nextStreak).toBe(1);
+  });
+
+  it('bozuk seri degeri carpani bozmaz', () => {
+    expect(clearOnce(Number.NaN).streakMultiplier).toBe(1);
+    expect(clearOnce(-5).streakMultiplier).toBe(1);
   });
 });

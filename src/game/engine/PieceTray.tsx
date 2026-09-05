@@ -13,6 +13,8 @@ interface PieceTrayProps {
   readonly pieces: readonly (Piece | undefined)[];
   readonly layout: TrayLayout;
   readonly theme: Theme;
+  /** Su an suruklenen yuva; kaynagin bosaldigi gorulsun diye soluklasir. */
+  readonly dimmedIndex?: number;
 }
 
 interface TraySlotProps {
@@ -20,9 +22,10 @@ interface TraySlotProps {
   readonly index: number;
   readonly layout: TrayLayout;
   readonly theme: Theme;
+  readonly dimmed: boolean;
 }
 
-function TraySlot({ piece, index, layout, theme }: TraySlotProps) {
+function TraySlot({ piece, index, layout, theme, dimmed }: TraySlotProps) {
   const slotStyle = { width: layout.slotWidth, height: layout.height };
 
   if (piece === undefined) {
@@ -57,6 +60,7 @@ function TraySlot({ piece, index, layout, theme }: TraySlotProps) {
             width={layout.cellSize}
             height={layout.cellSize}
             r={BOARD.CELL_RADIUS}
+            opacity={dimmed ? 0.25 : 1}
             color={colorFor(theme, piece.colorId)}
           />
         ))}
@@ -72,11 +76,18 @@ function TraySlot({ piece, index, layout, theme }: TraySlotProps) {
  * bosalir ama yerini korur, boylece tepsi yerlesimi hamle sirasinda zipla-
  * mamis olur.
  */
-function PieceTrayImpl({ pieces, layout, theme }: PieceTrayProps) {
+function PieceTrayImpl({ pieces, layout, theme, dimmedIndex }: PieceTrayProps) {
   return (
     <View style={styles.row}>
       {Array.from({ length: TRAY.PIECE_COUNT }, (_, index) => (
-        <TraySlot key={index} index={index} piece={pieces[index]} layout={layout} theme={theme} />
+        <TraySlot
+          key={index}
+          index={index}
+          piece={pieces[index]}
+          layout={layout}
+          theme={theme}
+          dimmed={index === dimmedIndex}
+        />
       ))}
     </View>
   );

@@ -177,6 +177,7 @@ describe('oyun sonunda yuksek skor', () => {
       status: 'playing',
       lastClear: { rows: [], cols: [] },
       lastGain: 0,
+      comboStreak: 0,
     });
 
     const accepted = useGameStore.getState().play(0, { x: 5, y: 0 });

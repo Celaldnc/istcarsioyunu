@@ -25,19 +25,34 @@ export interface PlacementPreview {
 }
 
 /**
- * Parmagin ekran konumundan parcanin oturacagi hucreyi bulur.
+ * Suruklenen parcanin sol ust kosesinin PIKSEL konumu.
  *
  * Parca yatayda parmagin ortasina hizalanir ve DRAG.LIFT kadar YUKARI
  * kaydirilir; aksi halde parmak tam da birakilacak alani kapatirdi.
- * En yakin hucreye yuvarlanir (floor degil), boylece hafif kaymalar
- * oyuncunun niyet ettigi hucreye oturur.
+ *
+ * Hem hucreye oturtma (dragOrigin) hem de parcanin parmagi takip ederek
+ * cizilmesi (DragPiece) ayni matematige dayanir; iki yerde ayri hesaplamak
+ * hayaletin ve parcanin birbirinden kaymasina yol acardi.
  */
-export function dragOrigin(layout: BoardLayout, pointer: Point, piece: Piece): Point | null {
+export function dragPixelOrigin(layout: BoardLayout, pointer: Point, piece: Piece): Point {
   const step = layout.cellSize + BOARD.CELL_GAP;
   const shapeWidth = piece.shape.width * step - BOARD.CELL_GAP;
 
-  const pixelX = pointer.x - shapeWidth / 2;
-  const pixelY = pointer.y - DRAG.LIFT * layout.cellSize - layout.cellSize / 2;
+  return {
+    x: pointer.x - shapeWidth / 2,
+    y: pointer.y - DRAG.LIFT * layout.cellSize - layout.cellSize / 2,
+  };
+}
+
+/**
+ * Parmagin ekran konumundan parcanin oturacagi HUCREYI bulur.
+ *
+ * En yakin hucreye yuvarlanir (floor degil), boylece hafif kaymalar
+ * oyuncunun niyet ettigi hucreye oturur. Tahtaya sigmiyorsa null.
+ */
+export function dragOrigin(layout: BoardLayout, pointer: Point, piece: Piece): Point | null {
+  const step = layout.cellSize + BOARD.CELL_GAP;
+  const { x: pixelX, y: pixelY } = dragPixelOrigin(layout, pointer, piece);
 
   const x = Math.round((pixelX - layout.originX) / step);
   const y = Math.round(pixelY / step);

@@ -25,11 +25,7 @@ interface GhostOverlayProps {
  */
 export function GhostOverlay({ cells, valid, layout, theme }: GhostOverlayProps) {
   return (
-    <View
-      pointerEvents="none"
-      style={[styles.overlay, { height: layout.height }]}
-      testID={GHOST_TEST_ID}
-    >
+    <View style={[styles.overlay, { height: layout.height }]} testID={GHOST_TEST_ID}>
       <Canvas style={StyleSheet.absoluteFill}>
         {cells.map((cell) => {
           const origin = cellOrigin(layout, cell.x, cell.y);
@@ -53,5 +49,6 @@ export function GhostOverlay({ cells, valid, layout, theme }: GhostOverlayProps)
 }
 
 const styles = StyleSheet.create({
-  overlay: { position: 'absolute', left: 0, right: 0, top: 0 },
+  // pointerEvents style icinde: props olarak vermek RN 0.86'da deprecated.
+  overlay: { position: 'absolute', left: 0, right: 0, top: 0, pointerEvents: 'none' },
 });
