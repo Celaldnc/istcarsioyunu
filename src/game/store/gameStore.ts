@@ -31,6 +31,7 @@ import { seedFromDate } from '@/game/core/rng';
 import type { GameMode } from '@/game/core/rules';
 import { addGameToStats, type LifetimeStats } from '@/game/core/titles';
 import type { Point } from '@/game/core/types';
+import { calendarOverrides } from '@/game/data/calendar';
 import { dayPhaseAt, greetingForPhase } from '@/game/data/dayCycle';
 import {
   esnafEventForEvents,
@@ -164,10 +165,14 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     newGame: (seed, options = {}) => {
       const actualSeed = seed ?? seedFromDate(new Date());
+      const mode = options.mode ?? 'classic';
       const start: StartOptions = {
-        mode: options.mode ?? 'classic',
+        mode,
         levelId: options.levelId ?? null,
         esnafId: get().selectedEsnafId,
+        // Takvim etkinligi (bayram, iftar) yalnizca gunluk mod DISINDA:
+        // Gunun Carsisi herkes icin ayni kalmali.
+        overrides: mode === 'daily' ? {} : calendarOverrides(new Date()),
       };
       begin(startGame(actualSeed, start), actualSeed);
     },

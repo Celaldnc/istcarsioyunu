@@ -18,6 +18,7 @@ import { EsnafBubble } from '@/components/EsnafBubble';
 import { FloatingGain } from '@/components/FloatingGain';
 import { HagglePanel } from '@/components/HagglePanel';
 import { LiveHud } from '@/components/LiveHud';
+import { PostcardCard } from '@/components/PostcardCard';
 import { RecordBar } from '@/components/RecordBar';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { Heading, Text, View, useThemeColor } from '@/components/Themed';
@@ -30,6 +31,7 @@ import { dayPhaseAt, themeForPhase, type DayPhase } from '@/game/data/dayCycle';
 import { districtById } from '@/game/data/journey';
 import { DEFAULT_THEME } from '@/game/data/themes';
 import { PlayArea } from '@/game/engine/PlayArea';
+import { usePostcardShare } from '@/game/share/usePostcardShare';
 import { useGameStore } from '@/game/store/gameStore';
 import { usePersistOnBackground } from '@/hooks/usePersistOnBackground';
 
@@ -140,6 +142,14 @@ export default function GameScreen({ onExit }: GameScreenProps) {
   const district = levelId === null ? undefined : districtById(levelId);
   const next = levelId === null ? undefined : nextLevelId(levelId);
   const title = titleFor(stats);
+  const finished = status !== 'playing';
+  const {
+    ref: postcardRef,
+    share: sharePostcardNow,
+    outcome: shareOutcome,
+    busy: shareBusy,
+  } = usePostcardShare('İstanbul Çarşı Blok kartpostalı');
+  const isRecord = highScore > 0 && score >= highScore;
 
   return (
     <View style={styles.container}>
@@ -201,6 +211,35 @@ export default function GameScreen({ onExit }: GameScreenProps) {
           onPet={pet}
         />
       </View>
+
+      {finished ? (
+        <View style={styles.postcard}>
+          <PostcardCard
+            ref={postcardRef}
+            heading={district?.name ?? (isRecord ? 'Yeni rekor!' : 'Çarşı günü')}
+            emoji={district?.emoji ?? (isRecord ? '🏆' : '🧿')}
+            score={score}
+            title={title.name}
+            dateText={new Date().toLocaleDateString('tr-TR')}
+            color={district?.color ?? theme.palette[2] ?? '#1E6FA8'}
+          />
+          <Pressable
+            onPress={() => void sharePostcardNow()}
+            accessibilityRole="button"
+            accessibilityLabel="Kartpostalı paylaş"
+            disabled={shareBusy}
+            style={styles.action}
+          >
+            <Text style={[styles.actionText, { color: accent }]}>
+              {shareOutcome === 'unavailable'
+                ? 'Paylaşım bu cihazda yok'
+                : shareOutcome === 'shared'
+                  ? '📮 Paylaşıldı'
+                  : '📮 Kartpostalı paylaş'}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {status === 'gameOver' ? (
         <View accessible accessibilityLabel="Oyun bitti" style={styles.gameOver}>
@@ -297,6 +336,7 @@ const styles = StyleSheet.create({
   gameOver: { alignItems: 'center', gap: 4 },
   gameOverText: { fontSize: 14, opacity: 0.7 },
   summary: { fontSize: 13, opacity: 0.8, textAlign: 'center' },
+  postcard: { alignItems: 'center', gap: 4 },
   actions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center' },
   // Material dokunma hedefi 48dp
   action: {

@@ -11,17 +11,17 @@ React Native Skia and Reanimated._
 
 ## Durum
 
-| Sprint | Kapsam                                                       | Durum       |
-| ------ | ------------------------------------------------------------ | ----------- |
-| 0      | Kurulum: Expo, TypeScript strict, lint/format/hook, Jest, CI | ✅ Tamam    |
-| 1      | Oyun mantığı (`src/game/core`), TDD, %90 coverage            | ✅ Tamam    |
-| 2      | Skia render katmanı (8×10 grid, parça tepsisi)               | ✅ Tamam    |
-| 3      | Gesture + sürükle-bırak + oyun döngüsü                       | ✅ Tamam    |
-| 4      | Ses, kalıcı depolama (MMKV), yüksek skor, ayarlar            | ✅ Tamam    |
-| 4.5    | "His paketi": Çini bonusu, Çay molası, esnaf, efektler       | ✅ Tamam    |
-| 5      | Günün Çarşısı, İstanbul Yolculuğu + kartpostallar, temalar   | ⏳ Sıradaki |
-| 6      | EAS build + Google Play yayını (kapalı test → production)    | —           |
-| 7      | iOS portu + App Store (v1.1, yalnızca v1.0 tutarsa)          | —           |
+| Sprint | Kapsam                                                                                                              | Durum    |
+| ------ | ------------------------------------------------------------------------------------------------------------------- | -------- |
+| 0      | Kurulum: Expo, TypeScript strict, lint/format/hook, Jest, CI                                                        | ✅ Tamam |
+| 1      | Oyun mantığı (`src/game/core`), TDD, %90 coverage                                                                   | ✅ Tamam |
+| 2      | Skia render katmanı (8×10 grid, parça tepsisi)                                                                      | ✅ Tamam |
+| 3      | Gesture + sürükle-bırak + oyun döngüsü                                                                              | ✅ Tamam |
+| 4      | Ses, kalıcı depolama (MMKV), yüksek skor, ayarlar                                                                   | ✅ Tamam |
+| 4.5    | "His paketi": Çini bonusu, Çay molası, esnaf, efektler                                                              | ✅ Tamam |
+| 5      | Canlı Çarşı: Tekir, martı, nazar, sinerji, makam, pazarlık, esnaf, Yolculuk, gün döngüsü, unvan, kartpostal, takvim | ✅ Tamam |
+| 6      | EAS build + Google Play yayını (kapalı test → production)                                                           | —        |
+| 7      | iOS portu + App Store (v1.1, yalnızca v1.0 tutarsa)                                                                 | —        |
 
 ## Gereksinimler
 
@@ -129,10 +129,32 @@ farkı **ses**ten geliyor; 1 numaralı şikâyet **reklam**. Buna göre eklenenl
 | **Çarşı eşyası bloklar** | Her renk kimliği bir eşya: simit (halka+susam), çay bardağı, nazar boncuğu, lokum, fıstık, dövme bakır. Skia vektörü, resim yok; tema 6 renk + eşya listesi tanımlar, tonlar `shade()` ile türer | `engine/CellSprite.tsx`         |
 | **Titreşim**             | Olaya göre hafif/orta/ağır; web'de kapalı; ayarlardan kapatılabilir                                                                                                                              | `game/haptics/`                 |
 
-**Yol haritası (öncelik sırasıyla):** Günün Çarşısı (tarih seed'i hazır) →
-İstanbul Yolculuğu (semt seviyeleri + kartpostal koleksiyonu, temaların
-kilidini açar) → özel hücreler (nazar, çay bardağı), Pazarlık (perk seçimi),
-Boğaz akıntısı modu. v1.0 **reklamsız** çıkar.
+## Canlı Çarşı (v1.0 kapsamı)
+
+Tahta ölü bir ızgara değil, yaşayan bir yer. Klasik mod saf Block Blast; **Canlı
+Çarşı** modunda hepsi açık. Kurallar `core/rules.ts`, olay rastgeleliği
+`core/events.ts` (hamle başına bağımsız üreteç — parça akışını bozmaz).
+
+| Öğe                         | Kural                                                                                                                                 | Nerede                              |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| **Tekir** 🐈                | Bir hücrede uyur (parça konamaz). Bitişik çizgi temizlenince taşınır. Dokununca 3 hamle yerinden kalkmaz                              | `core/cat.ts`                       |
+| **Martı** 🕊️                | 12 hamlede bir bir sütuna konar, 2 hamle sonra dalar ve en üstteki dolu hücreyi çalar. Sütununa simit koyarsan +30, gider             | `core/gull.ts`                      |
+| **Nazar** 🧿                | Nadiren bir hücre kararır; 6 hamlede temizlenmezse komşuya yayılır. Nazar boncuğu komşuları korur. Temizlenince +60                   | `core/nazar.ts`                     |
+| **Sinerji**                 | Temizlenen çizgide yan yana simit+çay ("kahvaltı"), lokum+fıstık: çift başına +40                                                     | `core/synergy.ts`                   |
+| **Makam serisi** 🎵         | Her ardışık temizleme Nihavend dizisinin bir sonraki notasını çalar; 8'de "makam tamamlandı" +100                                     | `audio/sources.ts`                  |
+| **Pazarlık** 🤝             | Oyun başına 3 hak: yuva seç, kayan ibreyi yeşilde durdur. Tutturursan parça bedava değişir, kaçırırsan -30                            | `core/game.ts haggle`               |
+| **Esnaf seçimi**            | Çırak (perk yok), Simitçi (3 kolay tepsi), Çaycı (2 çay molası), Halıcı (Çini ×2), Balıkçı (sık martı, simit ×2). Kartpostalla açılır | `core/rules.ts`, `data/esnaflar.ts` |
+| **İstanbul Yolculuğu** 🗺️   | 7 semt, hedefli seviyeler, **şekilli tahtalar** (Galata silueti, Kız Kulesi, Boğaz). Boğaz'da su şeridini aşan satır = **Köprü** +50  | `core/levels.ts`, `data/journey.ts` |
+| **Bir Gün İstanbul** 🌅     | Tahta zemini telefonun saatine göre (sabah/gün/akşam/gece); esnaf saate göre karşılar                                                 | `data/dayCycle.ts`                  |
+| **Unvanlar**                | Ömür boyu temizlenen çizgi: Çırak → Kalfa (100) → Usta (500) → Hacı (2000). Oyun sonu özetinde                                        | `core/titles.ts`                    |
+| **Kartpostal paylaşımı** 📮 | Oyun sonunda skor + unvan + İstanbul silueti kartı; view-shot + expo-sharing (web: navigator.share)                                   | `components/PostcardCard.tsx`       |
+| **Takvim etkinlikleri**     | Sunucusuz: Ramazan (iftar sonrası ek çay molası — İstanbul gün batımı hesaplanır), bayramlar, 29 Ekim, yılbaşı. Tablo 2026-2028       | `data/calendar.ts`                  |
+
+**Bilinçli sadelikler:** takvim bonusu kayda yazılmaz (geri yüklenen oyun
+bonusu kaybeder); Günün Çarşısı'nda perk ve etkinlik uygulanmaz (herkes eşit).
+
+**Sonraki adımlar:** gerçek ses kayıtları, cihazda performans ölçümü
+(80 hücre × sprite + overlay tuvalleri), Play kapalı test.
 
 ## Yayın Stratejisi
 

@@ -137,6 +137,11 @@ export interface StartOptions {
   readonly mode?: GameMode;
   readonly esnafId?: string;
   readonly levelId?: string | null;
+  /**
+   * Gecici kural ustune yazmalari (takvim etkinligi). KAYDA YAZILMAZ:
+   * geri yuklenen oyun etkinlik bonusunu kaybeder; bilincli sadelik.
+   */
+  readonly overrides?: Partial<GameRules>;
 }
 
 /**
@@ -183,7 +188,11 @@ export function startGame(seed: number, boardOrOptions: Board | StartOptions = {
   const esnafId = options.esnafId ?? DEFAULT_ESNAF_ID;
   const levelId = options.levelId ?? null;
   const level = levelById(levelId);
-  const rules = rulesFor({ mode, esnafId, overrides: level?.overrides });
+  const rules = rulesFor({
+    mode,
+    esnafId,
+    overrides: { ...options.overrides, ...level?.overrides },
+  });
   const board =
     options.board ?? (level?.mask === undefined ? createBoard() : createBoardFromMask(level.mask));
 

@@ -6,6 +6,7 @@ import { Heading, Text, useThemeColor } from '@/components/Themed';
 import { seedFromDate } from '@/game/core/rng';
 import type { GameMode } from '@/game/core/rules';
 import { titleFor } from '@/game/core/titles';
+import { activeEvent } from '@/game/data/calendar';
 import { dayPhaseAt } from '@/game/data/dayCycle';
 import { esnafById } from '@/game/data/esnaflar';
 import { useGameStore } from '@/game/store/gameStore';
@@ -72,6 +73,7 @@ export default function HomeScreen() {
 
   const title = titleFor(stats);
   const esnaf = esnafById(esnafId);
+  const event = activeEvent(new Date());
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -79,6 +81,17 @@ export default function HomeScreen() {
       <Text style={styles.sub}>
         {`${esnaf?.emoji ?? ''} ${esnaf?.name ?? ''} · ${postcards.length} kartpostal · ${stats.games} oyun`}
       </Text>
+
+      {event !== null ? (
+        <Pressable
+          accessibilityRole="text"
+          accessibilityLabel={`${event.title}: ${event.text}`}
+          style={[styles.card, { backgroundColor: accent }]}
+        >
+          <Text style={[styles.cardTitle, styles.onTint]}>{`${event.emoji} ${event.title}`}</Text>
+          <Text style={[styles.cardText, styles.onTint]}>{event.text}</Text>
+        </Pressable>
+      ) : null}
 
       {status === 'playing' && score > 0 ? (
         <Pressable

@@ -255,3 +255,29 @@ describe('canli carsi ekrani', () => {
     expect(onExit).toHaveBeenCalled();
   });
 });
+
+describe('kartpostal', () => {
+  it('oyun bitince kartpostal ve paylas dugmesi gorunur', async () => {
+    useGameStore.setState({ status: 'gameOver', score: 420 });
+
+    await render(<GameScreen />);
+
+    expect(screen.getByTestId('postcard-card')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Kartpostalı paylaş')).toBeOnTheScreen();
+  });
+
+  it('paylas dugmesi akisi calistirir ve durumu yazar', async () => {
+    useGameStore.setState({ status: 'gameOver', score: 420 });
+    await render(<GameScreen />);
+
+    fireEvent.press(screen.getByLabelText('Kartpostalı paylaş'));
+
+    expect(await screen.findByText(/Paylaşıldı|Paylaşım bu cihazda yok/)).toBeOnTheScreen();
+  });
+
+  it('oyun surerken kartpostal yoktur', async () => {
+    await render(<GameScreen />);
+
+    expect(screen.queryByTestId('postcard-card')).toBeNull();
+  });
+});
