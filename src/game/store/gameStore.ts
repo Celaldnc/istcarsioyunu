@@ -7,15 +7,31 @@ import {
   recordScore,
   saveGame,
   saveSettings,
+  type Settings,
 } from './persistence';
 import { getAppStore } from './storage';
 
 import { getSoundManager } from '@/game/audio';
-import { cueForMove } from '@/game/audio/cues';
-import { playPiece, restart, startGame, takeTeaBreak, type GameState } from '@/game/core/game';
+import { cueForMove, soundForEvents } from '@/game/audio/cues';
+import {
+  haggle as haggleMove,
+  petCat,
+  playPiece,
+  restart,
+  startGame,
+  takeTeaBreak,
+  type GameState,
+  type StartOptions,
+} from '@/game/core/game';
 import { seedFromDate } from '@/game/core/rng';
+import type { GameMode } from '@/game/core/rules';
 import type { Point } from '@/game/core/types';
-import { esnafEventForMove, esnafLine, type EsnafEvent } from '@/game/data/esnaf';
+import {
+  esnafEventForEvents,
+  esnafEventForMove,
+  esnafLine,
+  type EsnafEvent,
+} from '@/game/data/esnaf';
 import { getHaptics } from '@/game/haptics';
 
 /**
@@ -34,22 +50,34 @@ export interface EsnafMessage {
   readonly text: string;
 }
 
+export interface NewGameOptions {
+  readonly mode?: GameMode;
+  readonly levelId?: string | null;
+}
+
 export interface GameStore extends GameState {
   readonly highScore: number;
   readonly soundEnabled: boolean;
   readonly hapticsEnabled: boolean;
+  /** Secili esnaf (ayarlardan; yeni oyunda kurala islenir). */
+  readonly selectedEsnafId: string;
   readonly esnaf: EsnafMessage | null;
 
   /** Yeni oyun baslatir. Seed verilmezse gunun tarihinden turetilir. */
-  newGame: (seed?: number) => void;
+  newGame: (seed?: number, options?: NewGameOptions) => void;
   /** Parcayi oynar; hamle kabul edilmediyse false doner. */
   play: (trayIndex: number, origin: Point) => boolean;
   /** Ayni seed ile bastan baslar. */
   playAgain: () => void;
   /** "Cay molasi": bitmis oyunu devam ettirir; hak yoksa false doner. */
   teaBreak: () => boolean;
+  /** Tekir'i oksar; kedi yoksa/dinleniyorsa false. */
+  pet: () => boolean;
+  /** Pazarlik sonucunu isler; hak yoksa false. */
+  haggle: (trayIndex: number, success: boolean) => boolean;
   setSoundEnabled: (enabled: boolean) => void;
   setHapticsEnabled: (enabled: boolean) => void;
+  setEsnaf: (esnafId: string) => void;
   /** Durumu hemen diske yazar (uygulama arka plana dusunce). */
   persistNow: () => void;
 }
@@ -58,8 +86,11 @@ export interface GameStore extends GameState {
  * Acilista kaydedilmis oyun varsa ondan devam edilir.
  * Bozuk kayit null doner ve sessizce yeni oyun baslar.
  */
-function initialGame(): GameState {
-  return loadGame(getAppStore()) ?? startGame(seedFromDate(new Date()));
+function initialGame(settings: Settings): GameState {
+  return (
+    loadGame(getAppStore()) ??
+    startGame(seedFromDate(new Date()), { mode: 'canli', esnafId: settings.esnafId })
+  );
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
@@ -85,17 +116,33 @@ export const useGameStore = create<GameStore>((set, get) => {
     haptics.fire(cue);
   };
 
+  const currentSettings = (): Settings => ({
+    soundEnabled: get().soundEnabled,
+    hapticsEnabled: get().hapticsEnabled,
+    esnafId: get().selectedEsnafId,
+  });
+
+  const begin = (next: GameState, salt: number) => {
+    saveGame(storage, next);
+    set({ ...next, esnaf: speak('start', salt) });
+  };
+
   return {
-    ...initialGame(),
+    ...initialGame(settings),
     highScore: loadHighScore(storage),
     soundEnabled: settings.soundEnabled,
     hapticsEnabled: settings.hapticsEnabled,
+    selectedEsnafId: settings.esnafId,
     esnaf: speak('start', Date.now()),
 
-    newGame: (seed) => {
-      const next = startGame(seed ?? seedFromDate(new Date()));
-      saveGame(storage, next);
-      set({ ...next, esnaf: speak('start', next.seed) });
+    newGame: (seed, options = {}) => {
+      const actualSeed = seed ?? seedFromDate(new Date());
+      const start: StartOptions = {
+        mode: options.mode ?? 'classic',
+        levelId: options.levelId ?? null,
+        esnafId: get().selectedEsnafId,
+      };
+      begin(startGame(actualSeed, start), actualSeed);
     },
 
     play: (trayIndex, origin) => {
@@ -117,11 +164,11 @@ export const useGameStore = create<GameStore>((set, get) => {
       saveGame(storage, next);
 
       const event = esnafEventForMove(current, next, ctx);
+      const finished = next.status !== 'playing';
 
       set({
         ...next,
-        highScore:
-          next.status === 'gameOver' ? recordScore(storage, next.score) : current.highScore,
+        highScore: finished ? recordScore(storage, next.score) : current.highScore,
         // Siradan hamlede mevcut replik korunur; baloncugun kapanmasi UI'daki
         // zamanlayicinin isi.
         esnaf: event === null ? current.esnaf : speak(event, next.score + next.piecesDrawn),
@@ -131,8 +178,7 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     playAgain: () => {
       const next = restart(get());
-      saveGame(storage, next);
-      set({ ...next, esnaf: speak('start', next.seed + 1) });
+      begin(next, next.seed + 1);
     },
 
     teaBreak: () => {
@@ -148,16 +194,49 @@ export const useGameStore = create<GameStore>((set, get) => {
       return true;
     },
 
+    pet: () => {
+      const current = get();
+      const next = petCat(current);
+      if (next === (current as GameState)) {
+        return false;
+      }
+      feedback('cat');
+      saveGame(storage, next);
+      set({ ...next, esnaf: speak('catPetted', next.moves) });
+      return true;
+    },
+
+    haggle: (trayIndex, success) => {
+      const current = get();
+      const next = haggleMove(current, trayIndex, success);
+      if (next === (current as GameState)) {
+        return false;
+      }
+      const live = esnafEventForEvents(next.events);
+      feedback(soundForEvents(next.events) ?? 'place');
+      saveGame(storage, next);
+      set({
+        ...next,
+        esnaf: live === null ? current.esnaf : speak(live, next.hagglesLeft + next.score),
+      });
+      return true;
+    },
+
     setSoundEnabled: (enabled) => {
       sound.setEnabled(enabled);
-      saveSettings(storage, { soundEnabled: enabled, hapticsEnabled: get().hapticsEnabled });
       set({ soundEnabled: enabled });
+      saveSettings(storage, currentSettings());
     },
 
     setHapticsEnabled: (enabled) => {
       haptics.setEnabled(enabled);
-      saveSettings(storage, { soundEnabled: get().soundEnabled, hapticsEnabled: enabled });
       set({ hapticsEnabled: enabled });
+      saveSettings(storage, currentSettings());
+    },
+
+    setEsnaf: (esnafId) => {
+      set({ selectedEsnafId: esnafId });
+      saveSettings(storage, currentSettings());
     },
 
     persistNow: () => {

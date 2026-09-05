@@ -1,6 +1,7 @@
 import type { KeyValueStore } from './storage';
 
 import type { GameState } from '@/game/core/game';
+import { DEFAULT_ESNAF_ID } from '@/game/core/rules';
 import { deserializeGame, serializeGame } from '@/game/core/save';
 
 /**
@@ -22,9 +23,15 @@ const KEYS = {
 export interface Settings {
   readonly soundEnabled: boolean;
   readonly hapticsEnabled: boolean;
+  /** Secili esnaf karakteri. */
+  readonly esnafId: string;
 }
 
-export const DEFAULT_SETTINGS: Settings = { soundEnabled: true, hapticsEnabled: true };
+export const DEFAULT_SETTINGS: Settings = {
+  soundEnabled: true,
+  hapticsEnabled: true,
+  esnafId: DEFAULT_ESNAF_ID,
+};
 
 export function saveGame(store: KeyValueStore, state: GameState): void {
   store.set(KEYS.game, serializeGame(state));
@@ -75,10 +82,11 @@ export function loadSettings(store: KeyValueStore): Settings {
     }
     // Eksik veya bozuk alan varsayilana duser; eski kayitlar (yalnizca ses
     // alani olan) boylece kayipsiz okunur.
-    const { soundEnabled, hapticsEnabled } = parsed as Partial<Settings>;
+    const { soundEnabled, hapticsEnabled, esnafId } = parsed as Partial<Settings>;
     return {
       soundEnabled: typeof soundEnabled === 'boolean' ? soundEnabled : true,
       hapticsEnabled: typeof hapticsEnabled === 'boolean' ? hapticsEnabled : true,
+      esnafId: typeof esnafId === 'string' && esnafId.length > 0 ? esnafId : DEFAULT_ESNAF_ID,
     };
   } catch {
     return DEFAULT_SETTINGS;

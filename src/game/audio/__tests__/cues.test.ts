@@ -1,6 +1,7 @@
-import { cueForMove } from '../cues';
+import { cueForMove, soundForEvents } from '../cues';
+import { noteForStreak } from '../sources';
 
-import { LEVEL } from '@/constants/config';
+import { LEVEL, MAKAM } from '@/constants/config';
 import { playPiece, startGame } from '@/game/core/game';
 import type { GameState } from '@/game/core/game';
 
@@ -25,8 +26,47 @@ describe('cueForMove', () => {
     expect(cueForMove(before, after)).toBe('place');
   });
 
-  it('tek cizgi temizlendiyse temizleme sesi', () => {
-    expect(cueForMove(before, withClear({ ...before }, [0], []))).toBe('clear');
+  it('tek cizgi temizlendiyse makam notasi (seri 1 -> ilk nota)', () => {
+    const after = { ...withClear({ ...before }, [0], []), comboStreak: 1 };
+
+    expect(cueForMove(before, after)).toBe('note1');
+  });
+
+  it('makam kapaliysa duz temizleme sesi', () => {
+    const after = {
+      ...withClear({ ...before }, [0], []),
+      comboStreak: 1,
+      rules: { ...before.rules, makam: false },
+    };
+
+    expect(cueForMove(before, after)).toBe('clear');
+  });
+
+  it('seri uzadikca nota ilerler ve tavanda kalir', () => {
+    expect(noteForStreak(3)).toBe('note3');
+    expect(noteForStreak(MAKAM.NOTES + 5)).toBe(`note${MAKAM.NOTES}`);
+    expect(noteForStreak(0)).toBe('note1');
+  });
+
+  it('canli olaylar temizleme sesinin onune gecer', () => {
+    const after = { ...withClear({ ...before }, [0], []), events: ['gullFed' as const] };
+
+    expect(cueForMove(before, after)).toBe('gull');
+    expect(soundForEvents(['catMoved'])).toBe('cat');
+    expect(soundForEvents(['nazarSpread'])).toBe('nazar');
+    expect(soundForEvents(['synergy'])).toBe('synergy');
+    expect(soundForEvents(['haggleLost'])).toBe('haggleLose');
+    expect(soundForEvents([])).toBeNull();
+  });
+
+  it('makam tamamlaninca fanfar', () => {
+    const after = { ...withClear({ ...before }, [0], []), events: ['makamComplete' as const] };
+
+    expect(cueForMove(before, after)).toBe('record');
+  });
+
+  it('seviye kazanilinca fanfar', () => {
+    expect(cueForMove(before, { ...before, status: 'won' })).toBe('record');
   });
 
   it('iki cizgi temizlendiyse combo sesi', () => {
@@ -70,12 +110,12 @@ describe('cueForMove', () => {
   it('rekor zaten asilmissa tekrar rekor sesi calmaz', () => {
     const after = withClear({ ...before, score: 200 }, [0], []);
 
-    expect(cueForMove({ ...before, score: 150 }, after, { highScore: 100 })).toBe('clear');
+    expect(cueForMove({ ...before, score: 150 }, after, { highScore: 100 })).toBe('note1');
   });
 
   it('ilk oyunda (rekor 0) rekor sesi calmaz', () => {
     const after = withClear({ ...before, score: 10 }, [0], []);
 
-    expect(cueForMove(before, after, { highScore: 0 })).toBe('clear');
+    expect(cueForMove(before, after, { highScore: 0 })).toBe('note1');
   });
 });

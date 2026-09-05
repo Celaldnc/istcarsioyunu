@@ -122,7 +122,8 @@ describe('S3 store ses yonetimini gercekten suruyor', () => {
 
     useGameStore.getState().play(0, { x: BOARD.COLS - 1, y: 0 });
 
-    expect(soundCalls).toEqual(['play:clear']);
+    // Makam acik: tek temizleme serinin ilk notasini calar.
+    expect(soundCalls).toEqual(['play:note1']);
   });
 
   it('tek renkli cizgi temizleyen hamlede Cini sesi calar', () => {

@@ -1,4 +1,11 @@
-import { ESNAF_EVENTS, ESNAF_LINES, esnafEventForMove, esnafLine, type EsnafEvent } from '../esnaf';
+import {
+  ESNAF_EVENTS,
+  ESNAF_LINES,
+  esnafEventForEvents,
+  esnafEventForMove,
+  esnafLine,
+  type EsnafEvent,
+} from '../esnaf';
 
 import { BOARD, LEVEL } from '@/constants/config';
 import { playPiece, startGame, takeTeaBreak, type GameState } from '@/game/core/game';
@@ -149,3 +156,27 @@ function nearlyFull(): Board {
     Array.from({ length: BOARD.COLS }, (_, x) => (x === y % BOARD.COLS ? null : 1)),
   );
 }
+
+describe('canli olaylar', () => {
+  it('olay listesinden oncelikli olani secer', () => {
+    expect(esnafEventForEvents(['catMoved', 'gullFed'])).toBe('gullFed');
+    expect(esnafEventForEvents(['haggleLost'])).toBe('haggleLost');
+    expect(esnafEventForEvents([])).toBeNull();
+  });
+
+  it('hamlede canli olay Cini`nin onune gecer', () => {
+    const after: GameState = {
+      ...withClear({ ...before, board: fullish() }, [0], []),
+      lastCini: { rows: [0], cols: [] },
+      events: ['synergy'],
+    };
+
+    expect(esnafEventForMove(before, after, ctxOf())).toBe('synergy');
+  });
+
+  it('seviye kazanilinca levelWon', () => {
+    expect(esnafEventForMove(before, { ...before, status: 'won' }, ctxOf())).toBe('levelWon');
+  });
+});
+
+const ctxOf = () => ({ highScore: 0 });

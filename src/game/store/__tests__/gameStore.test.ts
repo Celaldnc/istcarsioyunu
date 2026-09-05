@@ -287,3 +287,48 @@ describe('titresim ayari', () => {
     expect(useGameStore.getState().hapticsEnabled).toBe(true);
   });
 });
+
+describe('canli carsi aksiyonlari', () => {
+  it('newGame mod secenegi alir', () => {
+    useGameStore.getState().newGame(SEED, { mode: 'canli' });
+
+    expect(useGameStore.getState().mode).toBe('canli');
+    expect(useGameStore.getState().cat).not.toBeNull();
+  });
+
+  it('pet kediyi oksar ve esnaf konusur', () => {
+    useGameStore.getState().newGame(SEED, { mode: 'canli' });
+
+    expect(useGameStore.getState().pet()).toBe(true);
+    expect(useGameStore.getState().cat?.restTurns).toBeGreaterThan(0);
+    expect(useGameStore.getState().esnaf?.event).toBe('catPetted');
+    // Dinlenen kedi tekrar oksanmaz.
+    expect(useGameStore.getState().pet()).toBe(false);
+  });
+
+  it('klasik oyunda pet false doner', () => {
+    expect(useGameStore.getState().pet()).toBe(false);
+  });
+
+  it('haggle hakki dusurur ve sonucu isler', () => {
+    useGameStore.getState().newGame(SEED, { mode: 'canli' });
+    const before = useGameStore.getState().hagglesLeft;
+
+    expect(useGameStore.getState().haggle(0, false)).toBe(true);
+    expect(useGameStore.getState().hagglesLeft).toBe(before - 1);
+    expect(useGameStore.getState().esnaf?.event).toBe('haggleLost');
+  });
+
+  it('klasik oyunda haggle false doner', () => {
+    expect(useGameStore.getState().haggle(0, true)).toBe(false);
+  });
+
+  it('esnaf secimi kalici ve yeni oyunda kurala islenir', () => {
+    useGameStore.getState().setEsnaf('halici');
+    useGameStore.getState().newGame(SEED, { mode: 'canli' });
+
+    expect(useGameStore.getState().selectedEsnafId).toBe('halici');
+    expect(useGameStore.getState().rules.ciniMultiplier).toBe(2);
+    useGameStore.getState().setEsnaf('cirak');
+  });
+});

@@ -10,6 +10,11 @@
  * yeterli; burada veya cagri yerlerinde degisiklik gerekmez.
  */
 
+import { MAKAM } from '@/constants/config';
+
+/** Makam serisinin notalari: note1..noteN. */
+export const NOTE_NAMES = Array.from({ length: MAKAM.NOTES }, (_, i) => `note${i + 1}` as const);
+
 export const SOUND_NAMES = [
   'place',
   'clear',
@@ -20,11 +25,25 @@ export const SOUND_NAMES = [
   'levelUp',
   'record',
   'teaBreak',
+  'cat',
+  'gull',
+  'nazar',
+  'synergy',
+  'haggleWin',
+  'haggleLose',
+  ...NOTE_NAMES,
 ] as const;
 
 export type SoundName = (typeof SOUND_NAMES)[number];
 
-// Metro asset kaydi require() ile yapilir; import ile calismaz.
+/** Seri uzunlugu icin makam notasi (1 tabanli; tavani asinca son nota). */
+export function noteForStreak(streak: number): SoundName {
+  const index = Math.max(1, Math.min(MAKAM.NOTES, Math.trunc(streak)));
+  return `note${index}` as SoundName;
+}
+
+// Metro asset kaydi require() ile yapilir; import ile calismaz ve dinamik
+// yol da kabul etmez; bu yuzden notalar tek tek yazilir.
 export const SOUND_SOURCES: Readonly<Record<SoundName, unknown>> = {
   place: require('../../../assets/sounds/place.wav'),
   clear: require('../../../assets/sounds/clear.wav'),
@@ -35,4 +54,18 @@ export const SOUND_SOURCES: Readonly<Record<SoundName, unknown>> = {
   levelUp: require('../../../assets/sounds/levelUp.wav'),
   record: require('../../../assets/sounds/record.wav'),
   teaBreak: require('../../../assets/sounds/teaBreak.wav'),
+  cat: require('../../../assets/sounds/cat.wav'),
+  gull: require('../../../assets/sounds/gull.wav'),
+  nazar: require('../../../assets/sounds/nazar.wav'),
+  synergy: require('../../../assets/sounds/synergy.wav'),
+  haggleWin: require('../../../assets/sounds/haggleWin.wav'),
+  haggleLose: require('../../../assets/sounds/haggleLose.wav'),
+  note1: require('../../../assets/sounds/note1.wav'),
+  note2: require('../../../assets/sounds/note2.wav'),
+  note3: require('../../../assets/sounds/note3.wav'),
+  note4: require('../../../assets/sounds/note4.wav'),
+  note5: require('../../../assets/sounds/note5.wav'),
+  note6: require('../../../assets/sounds/note6.wav'),
+  note7: require('../../../assets/sounds/note7.wav'),
+  note8: require('../../../assets/sounds/note8.wav'),
 };

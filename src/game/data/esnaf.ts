@@ -1,6 +1,6 @@
 import { crossedRecord, type MoveContext } from '@/game/audio/cues';
 import { countFilledCells, isBoardEmpty } from '@/game/core/board';
-import type { GameState } from '@/game/core/game';
+import type { GameEvent, GameState } from '@/game/core/game';
 import { levelForScore } from '@/game/core/level';
 
 import { BOARD } from '@/constants/config';
@@ -28,6 +28,25 @@ export const ESNAF_EVENTS = [
   'nearDeath',
   'gameOver',
   'teaBreak',
+  // canli carsi
+  'catMoved',
+  'catPetted',
+  'gullLanded',
+  'gullDove',
+  'gullFed',
+  'nazarSpawned',
+  'nazarSpread',
+  'nazarCleared',
+  'synergy',
+  'makamComplete',
+  'bridge',
+  'haggleWon',
+  'haggleLost',
+  'levelWon',
+  // gun dongusu
+  'morning',
+  'evening',
+  'night',
 ] as const;
 
 export type EsnafEvent = (typeof ESNAF_EVENTS)[number];
@@ -85,6 +104,43 @@ export const ESNAF_LINES: Readonly<Record<EsnafEvent, readonly string[]>> = {
     'Al bir nefes, tezgâhı topladım.',
     'Çay içtik, devam!',
   ],
+  catMoved: ['Tekir uyandı, yer değiştirdi.', 'Kediyi rahatsız ettin, gitti.', 'Tekir taşındı.'],
+  catPetted: ['Tekir mırladı, üç hamle kımıldamaz.', 'Kedi memnun, uyuyor.', 'Pıss pıss… oldu.'],
+  gullLanded: [
+    'Martı kondu! Simit var mı?',
+    'Martı geldi, gözü tezgâhta.',
+    'Dikkat, martı bakıyor!',
+  ],
+  gullDove: ['Martı daldı, bir tane kaptı!', 'Vay, martı çaldı!', 'Martı işini gördü, uçtu.'],
+  gullFed: ['Simit attın, martı memnun!', 'Aferin, martıyı doyurdun.', 'Martı simiti aldı gitti!'],
+  nazarSpawned: ['Nazar değdi! Hemen temizle.', 'Bir hücre karardı, nazar bu.', 'Tü tü tü, nazar!'],
+  nazarSpread: ['Nazar yayılıyor, acele et!', 'Lanet komşuya geçti!', 'Boncuk lazım buraya.'],
+  nazarCleared: ['Nazar bozuldu, maşallah!', 'Boncuk işe yaradı!', 'Kurtuldun nazardan!'],
+  synergy: [
+    'Simit + çay = kahvaltı!',
+    'Fıstıklı lokum, bayram gibi!',
+    'İkisi yan yana, tam takım!',
+  ],
+  makamComplete: [
+    'Makam tamamlandı, bravo!',
+    'Şarkıyı bitirdin, çarşı alkışlıyor!',
+    'Üsküdar’a gittik geldik!',
+  ],
+  bridge: ['Köprü kuruldu, iki yaka bir!', 'Avrupa’dan Asya’ya!', 'Boğaz’ı geçtin!'],
+  haggleWon: ['Pazarlık senin, al parçanı.', 'Hadi bu seferlik…', 'Ustalıkla pazarlık ettin!'],
+  haggleLost: ['Olmadı, indirim yok.', 'Pazarlık bu, kaybettin.', 'Bir dahakine daha hızlı!'],
+  levelWon: ['Semt tamam! Kartpostal senin.', 'Bu sokağı bitirdin!', 'Yolculuk devam ediyor!'],
+  morning: ['Günaydın! Simitler sıcak.', 'Sabah çayı hazır.', 'Erkenci kuş… çarşı senin.'],
+  evening: [
+    'Akşam oldu, Boğaz ışıl ışıl.',
+    'Kepenk kapanmadan bir tur daha?',
+    'Gün batımı, çay demli.',
+  ],
+  night: [
+    'Gece vardiyası… sana açık.',
+    'Herkes uyudu, sen oynuyorsun.',
+    'Sessiz çarşı, güzel çarşı.',
+  ],
 };
 
 /**
@@ -101,11 +157,35 @@ export function esnafLine(event: EsnafEvent, salt: number): string {
 /** Tahtada bu kadar veya daha az bosluk kalinca esnaf uyarir. */
 const NEAR_DEATH_EMPTY_CELLS = 12;
 
+/** Canli olaylarin konusma onceligi (ilk bulunan konusulur). */
+const LIVE_PRIORITY: readonly GameEvent[] = [
+  'levelWon',
+  'makamComplete',
+  'bridge',
+  'gullFed',
+  'nazarCleared',
+  'synergy',
+  'nazarSpread',
+  'nazarSpawned',
+  'gullDove',
+  'gullLanded',
+  'catMoved',
+  'catPetted',
+  'haggleWon',
+  'haggleLost',
+];
+
+/** Olay listesinden konusulmaya deger olani secer. */
+export function esnafEventForEvents(events: readonly GameEvent[]): EsnafEvent | null {
+  return LIVE_PRIORITY.find((event) => events.includes(event)) ?? null;
+}
+
 /**
  * Bir hamlenin esnafi konusturup konusturmayacagina karar verir.
  *
- * Oncelik: oyun sonu > cay molasi > rekor > perfect clear > Cini > combo >
- * seviye > seri > sikisma. Siradan yerlestirme ve tek temizlemede null.
+ * Oncelik: oyun sonu > cay molasi > rekor > perfect clear > canli olaylar >
+ * Cini > combo > seviye > seri > sikisma. Siradan yerlestirme ve tek
+ * temizlemede null.
  */
 export function esnafEventForMove(
   before: GameState,
@@ -118,6 +198,9 @@ export function esnafEventForMove(
   if (after.status === 'gameOver') {
     return 'gameOver';
   }
+  if (after.status === 'won') {
+    return 'levelWon';
+  }
   if (before.status === 'gameOver') {
     return 'teaBreak';
   }
@@ -128,6 +211,10 @@ export function esnafEventForMove(
   const lines = after.lastClear.rows.length + after.lastClear.cols.length;
   if (lines > 0 && isBoardEmpty(after.board)) {
     return 'perfectClear';
+  }
+  const live = esnafEventForEvents(after.events);
+  if (live !== null) {
+    return live;
   }
   if (after.lastCini.rows.length + after.lastCini.cols.length > 0) {
     return 'cini';

@@ -28,7 +28,7 @@ export interface Haptics {
  * Gecersiz hamlede "hata" deseni: oyuncu bakmadan da reddedildigini anlar.
  * Oyun sonu titresmez; zaten kotu bir an, uzerine vurmanin anlami yok.
  */
-const PATTERN: Readonly<Record<SoundName, HapticKind | null>> = {
+const PATTERN: Readonly<Partial<Record<SoundName, HapticKind | null>>> = {
   place: 'light',
   clear: 'medium',
   combo: 'heavy',
@@ -38,10 +38,21 @@ const PATTERN: Readonly<Record<SoundName, HapticKind | null>> = {
   teaBreak: 'medium',
   invalid: 'error',
   gameOver: null,
+  cat: 'light',
+  gull: 'medium',
+  nazar: 'medium',
+  synergy: 'heavy',
+  haggleWin: 'success',
+  haggleLose: 'error',
 };
 
 export function hapticFor(cue: SoundName): HapticKind | null {
-  return PATTERN[cue];
+  const known = PATTERN[cue];
+  if (known !== undefined) {
+    return known;
+  }
+  // Makam notalari (note1..N): temizleme kadar hissedilir.
+  return cue.startsWith('note') ? 'medium' : null;
 }
 
 interface Options {

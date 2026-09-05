@@ -93,6 +93,25 @@ const SOUNDS = {
   record: tone([523, 659, 784, 1047, 1319], 0.7),
   // Cay molasi: yumusak, sakinlestirici inis-cikis
   teaBreak: tone([392, 494, 392], 0.45),
+  // Kedi: iki tonlu kisa "miyav" izlenimi (asagi kayan)
+  cat: tone([700, 620, 520], 0.3),
+  // Marti: tiz, kisa cift ciglik
+  gull: tone([1500, 1100, 1500, 1100], 0.36),
+  // Nazar: alcak, tedirgin edici
+  nazar: tone([180, 170, 160], 0.5),
+  // Sinerji: parlak ikili cinlama
+  synergy: tone([880, 1175], 0.3),
+  // Pazarlik kazanildi / kaybedildi
+  haggleWin: tone([660, 880, 1100], 0.35),
+  haggleLose: tone([300, 220], 0.3),
+  // Makam notalari: Nihavend (armonik minor) dizisi, D4'ten baslar.
+  // Seri uzadikca bir sonraki nota calar; 8'de "makam tamamlanir".
+  ...Object.fromEntries(
+    [293.66, 329.63, 349.23, 392.0, 440.0, 466.16, 554.37, 587.33].map((hz, i) => [
+      `note${i + 1}`,
+      tone([hz, hz], 0.28),
+    ]),
+  ),
 };
 
 mkdirSync(OUT_DIR, { recursive: true });

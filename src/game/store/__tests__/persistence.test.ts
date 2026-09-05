@@ -116,7 +116,7 @@ describe('ayarlar', () => {
   it('kaydedilen ayar geri yuklenir', () => {
     const store = createMemoryStore();
 
-    saveSettings(store, { soundEnabled: false, hapticsEnabled: true });
+    saveSettings(store, { soundEnabled: false, hapticsEnabled: true, esnafId: 'cirak' });
 
     expect(loadSettings(store).soundEnabled).toBe(false);
   });
@@ -147,15 +147,20 @@ describe('titresim ayari kaliciligi', () => {
 
   it('kapatilinca kalici olur, ses ayarina dokunmaz', () => {
     const store = createMemoryStore();
-    saveSettings(store, { soundEnabled: true, hapticsEnabled: false });
+    saveSettings(store, { soundEnabled: true, hapticsEnabled: false, esnafId: 'cirak' });
 
-    expect(loadSettings(store)).toEqual({ soundEnabled: true, hapticsEnabled: false });
+    expect(loadSettings(store)).toEqual({
+      soundEnabled: true,
+      hapticsEnabled: false,
+      esnafId: 'cirak',
+    });
   });
 
   it('eski kayitta alan yoksa acik kabul edilir', () => {
     expect(loadSettings(createMemoryStore({ settings: '{"soundEnabled":false}' }))).toEqual({
       soundEnabled: false,
       hapticsEnabled: true,
+      esnafId: 'cirak',
     });
   });
 
@@ -163,5 +168,23 @@ describe('titresim ayari kaliciligi', () => {
     expect(
       loadSettings(createMemoryStore({ settings: '{"hapticsEnabled":"hayir"}' })).hapticsEnabled,
     ).toBe(true);
+  });
+});
+
+describe('esnaf ayari kaliciligi', () => {
+  it('varsayilan cirak', () => {
+    expect(DEFAULT_SETTINGS.esnafId).toBe('cirak');
+  });
+
+  it('secim kalici olur', () => {
+    const store = createMemoryStore();
+    saveSettings(store, { soundEnabled: true, hapticsEnabled: true, esnafId: 'cayci' });
+
+    expect(loadSettings(store).esnafId).toBe('cayci');
+  });
+
+  it('bozuk veya bos deger varsayilana duser', () => {
+    expect(loadSettings(createMemoryStore({ settings: '{"esnafId":""}' })).esnafId).toBe('cirak');
+    expect(loadSettings(createMemoryStore({ settings: '{"esnafId":5}' })).esnafId).toBe('cirak');
   });
 });
