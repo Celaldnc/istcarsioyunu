@@ -78,8 +78,12 @@ export const THEME = {
 export const TRAY = {
   /** Ayni anda oyuncuya sunulan parca sayisi */
   PIECE_COUNT: 3,
-  /** Tepsideki onizleme hucrelerinin ust siniri (dp) */
-  MAX_CELL_SIZE: 22,
+  /**
+   * Tepsideki onizleme hucrelerinin ust siniri (dp).
+   * 22'de esya glifleri secilemiyordu; 26 = SPRITE.DETAIL_MIN_SIZE, yani
+   * tepside de detay cizilir.
+   */
+  MAX_CELL_SIZE: 26,
   /** Tepsi hucreleri arasi bosluk (dp) */
   CELL_GAP: 2,
   /** Iki parca yuvasi arasindaki bosluk (dp) */
@@ -141,7 +145,7 @@ export const SPRITE = {
    */
   DETAIL_MIN_SIZE: 26,
   /** Ust parlaklik seridi (blok "kabarik" dursun) */
-  GLOSS_OPACITY: 0.16,
+  GLOSS_OPACITY: 0.1,
   /** Alt golge seridi */
   SHADOW_OPACITY: 0.12,
 } as const;

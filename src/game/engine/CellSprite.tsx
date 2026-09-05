@@ -94,24 +94,25 @@ interface GlyphProps {
 function Glyph({ kind, x, y, size: s, base, detailed }: GlyphProps) {
   const cx = x + s / 2;
   const cy = y + s / 2;
-  const light = shade(base, 0.38);
-  const dark = shade(base, -0.28);
+  // Kontrast bilerek yuksek: 26px'lik tepsi hucresinde bile esya SECILMELI.
+  const light = shade(base, 0.62);
+  const dark = shade(base, -0.4);
 
   switch (kind) {
     case 'simit': {
       // Halka + susam
-      const ring = s * 0.3;
+      const ring = s * 0.33;
       return (
         <>
-          <Circle cx={cx} cy={cy} r={ring} color={light} style="stroke" strokeWidth={s * 0.15} />
+          <Circle cx={cx} cy={cy} r={ring} color={light} style="stroke" strokeWidth={s * 0.21} />
           {detailed
             ? [0.4, 1.7, 3.1, 4.5, 5.6].map((angle) => (
                 <Circle
                   key={angle}
                   cx={cx + Math.cos(angle) * ring}
                   cy={cy + Math.sin(angle) * ring}
-                  r={s * 0.035}
-                  color="#F8ECD2"
+                  r={s * 0.05}
+                  color={dark}
                 />
               ))
             : null}
@@ -121,34 +122,27 @@ function Glyph({ kind, x, y, size: s, base, detailed }: GlyphProps) {
     case 'cay': {
       // Ince belli cay bardagi + tabak
       const glass = [
-        [0.35, 0.2],
-        [0.65, 0.2],
-        [0.6, 0.42],
-        [0.66, 0.6],
-        [0.6, 0.8],
-        [0.4, 0.8],
-        [0.34, 0.6],
-        [0.4, 0.42],
+        [0.26, 0.12],
+        [0.74, 0.12],
+        [0.66, 0.4],
+        [0.74, 0.62],
+        [0.66, 0.84],
+        [0.34, 0.84],
+        [0.26, 0.62],
+        [0.34, 0.4],
       ]
         .map(([px, py], i) => `${i === 0 ? 'M' : 'L'} ${x + (px ?? 0) * s} ${y + (py ?? 0) * s}`)
         .join(' ');
       return (
         <>
-          <Path path={`${glass} Z`} color={light} opacity={0.9} />
-          <Rect
-            x={x + s * 0.4}
-            y={y + s * 0.48}
-            width={s * 0.2}
-            height={s * 0.3}
-            color={dark}
-            opacity={0.8}
-          />
+          <Path path={`${glass} Z`} color={light} />
+          <Rect x={x + s * 0.37} y={y + s * 0.46} width={s * 0.26} height={s * 0.36} color={dark} />
           {detailed ? (
             <Rect
-              x={x + s * 0.28}
-              y={y + s * 0.8}
-              width={s * 0.44}
-              height={s * 0.05}
+              x={x + s * 0.18}
+              y={y + s * 0.86}
+              width={s * 0.64}
+              height={s * 0.07}
               color={dark}
             />
           ) : null}
@@ -159,17 +153,17 @@ function Glyph({ kind, x, y, size: s, base, detailed }: GlyphProps) {
       // Beyaz - acik mavi - koyu goz bebegi
       return (
         <>
-          <Circle cx={cx} cy={cy} r={s * 0.32} color="#F4F1EA" />
-          <Circle cx={cx} cy={cy} r={s * 0.21} color="#5FB3E6" />
-          <Circle cx={cx} cy={cy} r={s * 0.1} color="#10233F" />
+          <Circle cx={cx} cy={cy} r={s * 0.4} color="#F4F1EA" />
+          <Circle cx={cx} cy={cy} r={s * 0.27} color="#5FB3E6" />
+          <Circle cx={cx} cy={cy} r={s * 0.14} color="#10233F" />
           {detailed ? (
-            <Circle cx={cx - s * 0.05} cy={cy - s * 0.06} r={s * 0.035} color="#FFFFFF" />
+            <Circle cx={cx - s * 0.06} cy={cy - s * 0.07} r={s * 0.05} color="#FFFFFF" />
           ) : null}
         </>
       );
     case 'lokum': {
       // Pudra sekerli kup + kirintilar
-      const inset = s * 0.22;
+      const inset = s * 0.15;
       return (
         <>
           <Rect
@@ -178,7 +172,6 @@ function Glyph({ kind, x, y, size: s, base, detailed }: GlyphProps) {
             width={s - inset * 2}
             height={s - inset * 2}
             color={light}
-            opacity={0.92}
           />
           {detailed
             ? [
@@ -190,8 +183,8 @@ function Glyph({ kind, x, y, size: s, base, detailed }: GlyphProps) {
                   key={`${px}-${py}`}
                   cx={x + (px ?? 0) * s}
                   cy={y + (py ?? 0) * s}
-                  r={s * 0.035}
-                  color="#FFFFFF"
+                  r={s * 0.055}
+                  color={dark}
                 />
               ))
             : null}
@@ -202,19 +195,13 @@ function Glyph({ kind, x, y, size: s, base, detailed }: GlyphProps) {
       // Fistik ici + kabuk catlagi
       return (
         <>
-          <Oval
-            x={x + s * 0.27}
-            y={y + s * 0.16}
-            width={s * 0.46}
-            height={s * 0.68}
-            color={light}
-          />
+          <Oval x={x + s * 0.2} y={y + s * 0.08} width={s * 0.6} height={s * 0.84} color={light} />
           {detailed ? (
             <Line
-              p1={vec(cx, y + s * 0.2)}
-              p2={vec(cx, y + s * 0.52)}
+              p1={vec(cx, y + s * 0.14)}
+              p2={vec(cx, y + s * 0.56)}
               color={dark}
-              strokeWidth={s * 0.04}
+              strokeWidth={s * 0.07}
             />
           ) : null}
         </>
@@ -240,9 +227,9 @@ function Glyph({ kind, x, y, size: s, base, detailed }: GlyphProps) {
               key={`${px}-${py}`}
               cx={x + (px ?? 0) * s}
               cy={y + (py ?? 0) * s}
-              r={s * 0.1}
+              r={s * 0.13}
               color={light}
-              opacity={0.55}
+              opacity={0.75}
             />
           ))}
         </>
