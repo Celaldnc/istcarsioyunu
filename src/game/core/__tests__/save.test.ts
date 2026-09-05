@@ -188,3 +188,70 @@ describe('serializeGame / deserializeGame', () => {
     expect(deserializeGame(serializeGame(state))?.tray[index]).toBeUndefined();
   });
 });
+
+describe('durum tahtadan yeniden turetilir', () => {
+  it('kayitli "playing" ama hicbir parca sigmiyorsa oyun sonu olur', () => {
+    // Sekil tanimlari surumler arasi degisirse (ayni id, farkli hucreler)
+    // kayitli durum yanilticidir. Oyuncu ekranda kilitlenmemeli.
+    const full = Array.from({ length: BOARD.ROWS }, () =>
+      Array.from({ length: BOARD.COLS }, () => 1),
+    );
+    const parsed = JSON.parse(serializeGame(startGame(SEED))) as Record<string, unknown>;
+    parsed.board = full;
+    parsed.status = 'playing';
+
+    expect(deserializeGame(JSON.stringify(parsed))?.status).toBe('gameOver');
+  });
+
+  it('hamle yapilabiliyorsa kayitli "playing" korunur', () => {
+    expect(deserializeGame(serializeGame(startGame(SEED)))?.status).toBe('playing');
+  });
+});
+
+describe('deger araligi dogrulamalari', () => {
+  it('palet disi renk kimligi kaydi gecersiz kilar', () => {
+    // Aksi halde hucre mantiken dolu ama gorsel olarak bos gorunurdu.
+    expect(
+      deserializeGame(
+        corrupt((p) => {
+          const board = p.board as unknown[][];
+          board[0]![0] = 999;
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it('negatif renk kimligi gecersizdir', () => {
+    expect(
+      deserializeGame(
+        corrupt((p) => {
+          const board = p.board as unknown[][];
+          board[0]![0] = -1;
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it('kesirli renk kimligi gecersizdir', () => {
+    expect(
+      deserializeGame(
+        corrupt((p) => {
+          const tray = p.tray as unknown[];
+          tray[0] = { shapeId: 'dot', colorId: 1.5 };
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it('tepsi boyutunun kati olmayan piecesDrawn gecersizdir', () => {
+    expect(deserializeGame(corrupt((p) => (p.piecesDrawn = 4)))).toBeNull();
+  });
+
+  it('asiri buyuk piecesDrawn gecersizdir (uretec o kadar ileri sarilmamali)', () => {
+    expect(deserializeGame(corrupt((p) => (p.piecesDrawn = 1e9 + 1)))).toBeNull();
+  });
+
+  it('negatif piecesDrawn gecersizdir', () => {
+    expect(deserializeGame(corrupt((p) => (p.piecesDrawn = -3)))).toBeNull();
+  });
+});

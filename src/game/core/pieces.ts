@@ -123,7 +123,10 @@ const SPECS: readonly ShapeSpec[] = [
       [2, 1],
       [1, 2],
     ],
-    weight: 2,
+    // Simulasyonda (3000 oyun) olumlerin ~%48'i elde kalan "plus" yuzunden
+    // oluyordu; cikma olasiligi %3.4 olmasina ragmen. 3x3 pencerede 5 belirli
+    // hucre isteyen tek sekil bu. Agirlik 2 -> 1.
+    weight: 1,
   },
 ];
 

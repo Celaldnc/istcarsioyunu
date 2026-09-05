@@ -23,12 +23,26 @@ describe('computeBoardLayout', () => {
     expect(layout.cellSize).toBeGreaterThanOrEqual(LAYOUT.MIN_PLAYABLE_CELL_SIZE);
   });
 
-  it('tahta kullanilabilir genisligi asmaz', () => {
-    for (const width of [320, 360, 390, 412, 480]) {
+  it('tahta KENAR BOSLUKLARIYLA BIRLIKTE ekrana sigar', () => {
+    // Yalnizca width <= availableWidth kontrol etmek yetersizdi: kenar
+    // bosluklari haric tutuldugu icin tahtanin ekrandan tastigi durumlar
+    // testten kaciyordu.
+    for (const width of [320, 340, 360, 390, 412, 480]) {
       const layout = computeBoardLayout(width);
 
-      expect(layout.width).toBeLessThanOrEqual(width);
+      expect(layout.width + BOARD.SCREEN_MARGIN * 2).toBeLessThanOrEqual(width);
     }
+  });
+
+  it('en dar desteklenen ekranda beklenen SOMUT olculeri uretir', () => {
+    // Formulu tekrar etmek yerine sabit degerler: implementasyon degisirse
+    // test kirilir, ki amac budur.
+    expect(computeBoardLayout(320)).toEqual({
+      cellSize: 36,
+      width: 302,
+      height: 378,
+      originX: 9,
+    });
   });
 
   it('hucre boyutu tamsayidir (yarim piksel kenar olusmasin)', () => {
@@ -45,9 +59,14 @@ describe('computeBoardLayout', () => {
   });
 
   it('tahta yatayda ortalanir', () => {
-    const layout = computeBoardLayout(400);
+    // Somut deger: onceki hali implementasyonun formulunu aynen tekrar
+    // ettigi icin hicbir sey dogrulamiyordu (totoloji).
+    expect(computeBoardLayout(400).originX).toBe(33);
+  });
 
-    expect(layout.originX).toBe(Math.round((400 - layout.width) / 2));
+  it('tek piksellik artikta yatayda yukari yuvarlanir', () => {
+    // round yerine floor kullanilirsa bu deger 33 olurdu.
+    expect(computeBoardLayout(321).originX).toBe(10);
   });
 
   it('asiri dar ekranda bile pozitif hucre boyutu dondurur', () => {

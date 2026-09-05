@@ -116,23 +116,38 @@ describe('playPiece', () => {
     expect(next.tray.filter((p) => p !== undefined)).toHaveLength(TRAY.PIECE_COUNT - 1);
   });
 
-  it('satir temizleyen hamle puan kazandirir', () => {
-    // 8 genislikte tahtanin ust satirinda tek bosluk birak.
-    const almostFull = boardFrom(['1111111.', ...Array.from({ length: 9 }, () => '........')]);
-    let state = startGame(SEED, almostFull);
-
-    // Tek kareli parcayi bul; yoksa bu seed icin test anlamsiz olur.
-    const index = state.tray.findIndex((p) => p?.shape.id === 'dot');
-    if (index === -1) {
-      // Tepside dot yoksa, dogrudan skor mantigi score.test.ts'te zaten testli.
-      return;
+  it('satir temizleyen hamle puan ve temizleme bilgisi uretir', () => {
+    // ONCEKI HALI SESSIZCE ATLANIYORDU: tepside 'dot' yoksa test hicbir
+    // assertion calistirmadan return ediyordu ve bu seed'de 'dot' yok.
+    // Durum artik elle kuruluyor, tepsi seed'e birakilmiyor.
+    const board: Board = Array.from({ length: BOARD.ROWS }, (_, y) =>
+      Array.from({ length: BOARD.COLS }, (_, x) => (y === 0 && x < BOARD.COLS - 1 ? 1 : null)),
+    );
+    const dot = shapeById('dot');
+    if (dot === undefined) {
+      throw new Error('Test kurulumu hatali: dot sekli yok.');
     }
+    const state: GameState = {
+      board,
+      tray: [
+        { shape: dot, colorId: 1 },
+        { shape: dot, colorId: 1 },
+        { shape: dot, colorId: 1 },
+      ],
+      score: 0,
+      seed: 1,
+      piecesDrawn: TRAY.PIECE_COUNT,
+      status: 'playing',
+      lastClear: { rows: [], cols: [] },
+      lastGain: 0,
+    };
 
-    state = playPiece(state, index, { x: 7, y: 0 });
+    const next = playPiece(state, 0, { x: BOARD.COLS - 1, y: 0 });
 
-    expect(state.score).toBeGreaterThanOrEqual(SCORING.POINTS_PER_LINE);
-    expect(state.lastClear.rows).toEqual([0]);
-    expect(state.lastGain).toBe(state.score);
+    expect(next.lastClear).toEqual({ rows: [0], cols: [] });
+    // Tek satir + tahta tamamen bosaldi -> perfect clear bonusu
+    expect(next.score).toBe(SCORING.POINTS_PER_LINE + SCORING.PERFECT_CLEAR_BONUS);
+    expect(next.lastGain).toBe(next.score);
   });
 
   it('temizleme olmayan hamlede lastClear bostur', () => {

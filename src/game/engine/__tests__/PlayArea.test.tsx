@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react-native';
+import { act, render, screen } from '@testing-library/react-native';
 import { State } from 'react-native-gesture-handler';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 
@@ -86,7 +86,11 @@ describe('PlayArea', () => {
     const onDrop = await mountArea([piece]);
     const target = boardTouch(piece, 3, 4);
 
-    fireGestureHandler(getByGestureTestId(PLAY_PAN_TEST_ID), dragEvents(trayTouch(0), target));
+    // act sarmalayicisi sart: hareket callback'leri setState cagiriyor ve
+    // React guncellemeleri aksi halde test bittikten sonra flush oluyor.
+    await act(async () => {
+      fireGestureHandler(getByGestureTestId(PLAY_PAN_TEST_ID), dragEvents(trayTouch(0), target));
+    });
 
     expect(onDrop).toHaveBeenCalledWith(0, { x: 3, y: 4 });
   });
@@ -95,10 +99,12 @@ describe('PlayArea', () => {
     const piece = pieceOf('dot');
     const onDrop = await mountArea([piece]);
 
-    fireGestureHandler(
-      getByGestureTestId(PLAY_PAN_TEST_ID),
-      dragEvents(trayTouch(0), { x: -400, y: -400 }),
-    );
+    await act(async () => {
+      fireGestureHandler(
+        getByGestureTestId(PLAY_PAN_TEST_ID),
+        dragEvents(trayTouch(0), { x: -400, y: -400 }),
+      );
+    });
 
     expect(onDrop).not.toHaveBeenCalled();
   });
@@ -108,10 +114,12 @@ describe('PlayArea', () => {
     const onDrop = await mountArea([piece]);
     const target = boardTouch(piece, 3, 4);
 
-    fireGestureHandler(
-      getByGestureTestId(PLAY_PAN_TEST_ID),
-      dragEvents({ x: boardLayout.originX + 10, y: 10 }, target),
-    );
+    await act(async () => {
+      fireGestureHandler(
+        getByGestureTestId(PLAY_PAN_TEST_ID),
+        dragEvents({ x: boardLayout.originX + 10, y: 10 }, target),
+      );
+    });
 
     expect(onDrop).not.toHaveBeenCalled();
   });
@@ -121,12 +129,16 @@ describe('PlayArea', () => {
     const onDrop = await mountArea([undefined, piece]);
     const target = boardTouch(piece, 3, 4);
 
-    fireGestureHandler(getByGestureTestId(PLAY_PAN_TEST_ID), dragEvents(trayTouch(0), target));
+    // act sarmalayicisi sart: hareket callback'leri setState cagiriyor ve
+    // React guncellemeleri aksi halde test bittikten sonra flush oluyor.
+    await act(async () => {
+      fireGestureHandler(getByGestureTestId(PLAY_PAN_TEST_ID), dragEvents(trayTouch(0), target));
+    });
 
     expect(onDrop).not.toHaveBeenCalled();
   });
 
-  it('dolu hucrenin ustune birakma denemesinde onDrop cagrilmaz', async () => {
+  it("dolu hucrenin ustune birakmada onDrop yine cagrilir; kabul karari store'a aittir", async () => {
     const piece = pieceOf('dot');
     const onDrop = jest.fn();
     const occupied = placePiece(createBoard(), piece, { x: 3, y: 4 });
@@ -136,7 +148,11 @@ describe('PlayArea', () => {
     );
 
     const target = boardTouch(piece, 3, 4);
-    fireGestureHandler(getByGestureTestId(PLAY_PAN_TEST_ID), dragEvents(trayTouch(0), target));
+    // act sarmalayicisi sart: hareket callback'leri setState cagiriyor ve
+    // React guncellemeleri aksi halde test bittikten sonra flush oluyor.
+    await act(async () => {
+      fireGestureHandler(getByGestureTestId(PLAY_PAN_TEST_ID), dragEvents(trayTouch(0), target));
+    });
 
     // dragOrigin gecerli bir hucre verir; kabul/ret karari cagirana aittir,
     // bu yuzden onDrop cagrilir ama store hamleyi reddeder.

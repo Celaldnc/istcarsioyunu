@@ -70,7 +70,11 @@ export const useGameStore = create<GameStore>((set, get) => {
       const current = get();
       const next = playPiece(current, trayIndex, origin);
 
-      sound.play(cueForMove(current, next));
+      // Oyun zaten bittiyse tahtaya her dokunus "gecersiz hamle" sayilir ve
+      // uyari sesi calardi. Bitmis oyunda sessiz kal.
+      if (current.status === 'playing') {
+        sound.play(cueForMove(current, next));
+      }
 
       // Saf reducer gecersiz hamlede AYNI referansi dondurur.
       if (next === (current as GameState)) {

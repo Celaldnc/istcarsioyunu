@@ -9,9 +9,15 @@ const fakePlayer = (): FakePlayer => {
   const calls: string[] = [];
   return {
     calls,
-    play: () => calls.push('play'),
-    seekTo: (seconds: number) => calls.push(`seek:${seconds}`),
-    remove: () => calls.push('remove'),
+    play: () => {
+      calls.push('play');
+    },
+    seekTo: (seconds: number) => {
+      calls.push(`seek:${seconds}`);
+    },
+    remove: () => {
+      calls.push('remove');
+    },
   };
 };
 
@@ -130,6 +136,28 @@ describe('createSoundManager', () => {
     for (const player of factory.created) {
       expect(player.calls).toContain('remove');
     }
+  });
+
+  it('seekTo promise reddi yakalanir (unhandled rejection olmaz)', async () => {
+    const played: string[] = [];
+    const manager = createSoundManager({
+      createPlayer: () => ({
+        play: () => {
+          played.push('play');
+        },
+        // expo-audio'da seekTo ASENKRON; reddi try/catch yakalamaz.
+        seekTo: () => Promise.reject(new Error('sarma basarisiz')),
+        remove: () => undefined,
+      }),
+    });
+    manager.preload();
+
+    expect(() => manager.play('place')).not.toThrow();
+    // Reddin islenmesi icin mikrogorev kuyruguna firsat ver.
+    await Promise.resolve();
+
+    // Bastan saramasa da ses calinmaya devam etmeli.
+    expect(played).toContain('play');
   });
 
   it('dispose sonrasi calma sessizce gecer', () => {

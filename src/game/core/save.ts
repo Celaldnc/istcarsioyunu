@@ -1,8 +1,9 @@
+import { isGameOver } from './board';
 import type { GameState, GameStatus } from './game';
 import { shapeById } from './pieces';
 import type { Board, Cell, Piece } from './types';
 
-import { BOARD, TRAY } from '@/constants/config';
+import { BOARD, THEME, TRAY } from '@/constants/config';
 
 /**
  * Oyun durumunun kalici depolamaya yazilabilir bicimi.
@@ -59,6 +60,27 @@ const isFiniteNumber = (value: unknown): value is number =>
 const isStatus = (value: unknown): value is GameStatus =>
   value === 'playing' || value === 'gameOver';
 
+/**
+ * Renk kimligi paletin icinde mi?
+ *
+ * Yalnizca "sayi mi" diye bakmak yetmez: palet disi bir kimlik colorFor'da
+ * bos hucre rengine duser ve hucre MANTIKEN dolu ama GORSEL olarak bos
+ * gorunur. Oyuncu oraya parca birakmaya calisir, sessizce reddedilir ve
+ * sebebini asla goremez.
+ */
+const isColorId = (value: unknown): value is number =>
+  Number.isInteger(value) && (value as number) >= 0 && (value as number) < THEME.PALETTE_SIZE;
+
+/**
+ * Cekilen parca sayisi gecerli mi?
+ *
+ * Bozuk bir deger (or. 1e9) ureteci o kadar ileri sarmaya calisirdi.
+ * Sayi her zaman tepsi boyutunun kati olur: baslangicta bir tepsi, sonra
+ * her yenilemede bir tepsi daha.
+ */
+const isPiecesDrawn = (value: unknown): value is number =>
+  Number.isInteger(value) && (value as number) >= 0 && (value as number) % TRAY.PIECE_COUNT === 0;
+
 function parseBoard(value: unknown): Board | null {
   if (!Array.isArray(value) || value.length !== BOARD.ROWS) {
     return null;
@@ -72,7 +94,7 @@ function parseBoard(value: unknown): Board | null {
     }
     const cells: Cell[] = [];
     for (const cell of row) {
-      if (cell !== null && !isFiniteNumber(cell)) {
+      if (cell !== null && !isColorId(cell)) {
         return null;
       }
       cells.push(cell);
@@ -100,7 +122,7 @@ function parseTray(value: unknown): (Piece | undefined)[] | null {
     }
 
     const { shapeId, colorId } = slot as Partial<SavedSlot>;
-    if (typeof shapeId !== 'string' || !isFiniteNumber(colorId)) {
+    if (typeof shapeId !== 'string' || !isColorId(colorId)) {
       return null;
     }
 
@@ -141,11 +163,18 @@ export function deserializeGame(json: string): GameState | null {
     tray === null ||
     !isFiniteNumber(saved.score) ||
     !isFiniteNumber(saved.seed) ||
-    !isFiniteNumber(saved.piecesDrawn) ||
+    !isPiecesDrawn(saved.piecesDrawn) ||
     !isStatus(saved.status)
   ) {
     return null;
   }
+
+  // Durum kaydedildigi gibi degil, tahtadan YENIDEN TURETILIR.
+  // Sekil tanimlari surumler arasinda degisirse (ayni id, farkli hucreler)
+  // kayitli "playing" durumu hicbir parcanin sigmadigi bir tahtaya
+  // uygulanabilir; oyuncu oyun sonu ekranini goremeden ekranda kilitlenirdi.
+  const remaining = tray.filter((piece): piece is Piece => piece !== undefined);
+  const status: GameStatus = isGameOver(board, remaining) ? 'gameOver' : saved.status;
 
   return {
     board,
@@ -153,7 +182,7 @@ export function deserializeGame(json: string): GameState | null {
     score: saved.score,
     seed: saved.seed,
     piecesDrawn: saved.piecesDrawn,
-    status: saved.status,
+    status,
     // Animasyon ipuclari gecicidir; geri yuklerken sifirlanir.
     lastClear: { rows: [], cols: [] },
     lastGain: 0,

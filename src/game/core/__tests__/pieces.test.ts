@@ -1,6 +1,6 @@
 import { canPlace, createBoard } from '../board';
-import { SHAPES, generatePieceSet, shapeById } from '../pieces';
-import { createRng } from '../rng';
+import { RNG_CALLS_PER_PIECE, SHAPES, generatePieceSet, shapeById } from '../pieces';
+import { advance, createRng } from '../rng';
 
 import { PIECES, THEME, TRAY } from '@/constants/config';
 
@@ -108,5 +108,27 @@ describe('generatePieceSet', () => {
 
   it('sifir parca istenirse bos dizi dondurur', () => {
     expect(generatePieceSet(createRng(1), 0)).toEqual([]);
+  });
+});
+
+describe('RNG_CALLS_PER_PIECE invarianti', () => {
+  it('parca basina harcanan rng cagrisi sayisi sabitle uyusur', () => {
+    // Bu test kayit formatinin en kirilgan noktasini korur: generatePieceSet
+    // fazladan bir rng() cagrisi eklerse (rotasyon, nadir parca, renk
+    // agirligi...) TUM mevcut kayitlar sessizce desenkronize olur ve Daily
+    // modunun "herkes ayni bulmaca" garantisi kirilir.
+    const full = generatePieceSet(createRng(42), 5);
+
+    const skipped = createRng(42, 3 * RNG_CALLS_PER_PIECE);
+
+    expect(generatePieceSet(skipped, 2)).toEqual(full.slice(3));
+  });
+
+  it('advance ile ileri sarma da ayni sonucu verir', () => {
+    const full = generatePieceSet(createRng(7), 6);
+    const rng = createRng(7);
+    advance(rng, 4 * RNG_CALLS_PER_PIECE);
+
+    expect(generatePieceSet(rng, 2)).toEqual(full.slice(4));
   });
 });

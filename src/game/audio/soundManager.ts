@@ -14,8 +14,11 @@ import { SOUND_NAMES, SOUND_SOURCES, type SoundName } from './sources';
 
 export interface SoundPlayer {
   play(): void;
-  /** Bastan sarar; hizli tekrarlarda sesin kesilmeden calmasi icin gerekli. */
-  seekTo(seconds: number): unknown;
+  /**
+   * Bastan sarar; hizli tekrarlarda sesin kesilmeden calmasi icin gerekli.
+   * expo-audio'da ASENKRON (Promise doner) - tip bunu gizlememeli.
+   */
+  seekTo(seconds: number): Promise<void> | void;
   /** Kaynagi birakir. */
   remove(): void;
 }
@@ -64,7 +67,11 @@ export function createSoundManager({ createPlayer, enabled = true }: Options): S
         return;
       }
       try {
-        player.seekTo(0);
+        // seekTo asenkron: try/catch yalnizca senkron firlatmayi yakalar,
+        // promise reddi yakalanmazsa unhandled rejection uyarisi cikar.
+        void Promise.resolve(player.seekTo(0)).catch(() => {
+          // Bastan saramadiysak da sesi calmayi deniyoruz.
+        });
         player.play();
       } catch {
         // Ses kritik degil; hamle akisini bozmamali.

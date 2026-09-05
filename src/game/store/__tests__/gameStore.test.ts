@@ -110,12 +110,17 @@ describe('kalicilik ve ayarlar', () => {
     expect(useGameStore.getState().highScore).toBeGreaterThanOrEqual(0);
   });
 
-  it('oyun bitmeden yuksek skor guncellenmez', () => {
+  it('oyun surerken skor rekoru assa bile yuksek skor guncellenmez', () => {
+    // ONCEKI HALI HICBIR SEY OLCMUYORDU: skor zaten rekorun altindaydi, yani
+    // gameOver kosulu tamamen silinse bile test gecerdi. Simdi skor bilincli
+    // olarak rekorun uzerine cikariliyor.
+    useGameStore.setState({ score: 999_999, status: 'playing' });
     const before = useGameStore.getState().highScore;
     const index = firstFilled(useGameStore.getState().tray);
 
     useGameStore.getState().play(index, firstFit(index));
 
+    expect(useGameStore.getState().score).toBeGreaterThan(before);
     expect(useGameStore.getState().highScore).toBe(before);
   });
 

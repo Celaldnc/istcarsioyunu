@@ -14,15 +14,23 @@ export interface WeightedItem<T> {
   readonly weight: number;
 }
 
+/** mulberry32'nin her adimda duruma ekledigi sabit. */
+const STEP = 0x6d2b79f5;
+
 /**
  * mulberry32: 32-bit durumlu, hizli ve dagilimi iyi bir uretec.
  * Kriptografik degildir; oyun icin fazlasiyla yeterli.
+ *
+ * skip: uretecin kac adim ileriden baslayacagi. mulberry32'nin durumu saf bir
+ * sayac oldugu icin (her cagri state += STEP) ileri sarma O(1) hesaplanabilir;
+ * dongu ile sarmaya gerek yok. Math.imul kullaniliyor cunku skip buyudugunde
+ * duz carpma 2^53'u asip hassasiyet kaybeder.
  */
-export function createRng(seed: number): Rng {
-  let state = seed >>> 0;
+export function createRng(seed: number, skip = 0): Rng {
+  let state = (seed + Math.imul(skip, STEP)) >>> 0;
 
   return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
+    state = (state + STEP) >>> 0;
     let t = state;
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
@@ -67,11 +75,11 @@ export function pickWeighted<T>(rng: Rng, items: readonly WeightedItem<T>[]): T 
 }
 
 /**
- * Ureteci verilen adim kadar ileri sarar.
+ * Ureteci verilen adim kadar ileri sarar (O(n)).
  *
- * Kalici depolamadan geri yuklerken kullanilir: seed ve o ana kadar cekilen
- * parca sayisi saklanir, uretec ayni noktaya sarilarak dizinin devami alinir.
- * Boylece rng fonksiyonunu serilestirmek gerekmez.
+ * createRng(seed, skip) ayni sonucu O(1) verir ve sicak yolda o tercih
+ * edilmelidir. Bu fonksiyon, iki yolun esdegerligini testte sabitlemek ve
+ * mevcut bir uretec ornegini ilerletmek icin duruyor.
  */
 export function advance(rng: Rng, steps: number): void {
   for (let i = 0; i < steps; i += 1) {

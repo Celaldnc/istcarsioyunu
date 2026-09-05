@@ -1,4 +1,4 @@
-import { createRng, pickWeighted, seedFromDate } from '../rng';
+import { advance, createRng, pickWeighted, seedFromDate } from '../rng';
 
 describe('createRng', () => {
   it('ayni seed ayni diziyi uretir (Daily modunun temeli)', () => {
@@ -112,5 +112,38 @@ describe('pickWeighted', () => {
 
   it('bos listede hata firlatir', () => {
     expect(() => pickWeighted(createRng(1), [])).toThrow(/bos/i);
+  });
+});
+
+describe('advance / createRng(seed, skip) esdegerligi', () => {
+  it('atlama ile dongu ile ilerletme ayni diziyi verir', () => {
+    const looped = createRng(2026);
+    advance(looped, 7);
+
+    const skipped = createRng(2026, 7);
+
+    expect(Array.from({ length: 10 }, () => skipped())).toEqual(
+      Array.from({ length: 10 }, () => looped()),
+    );
+  });
+
+  it('skip 0 hic ilerletmemekle aynidir', () => {
+    expect(createRng(5, 0)()).toBe(createRng(5)());
+  });
+
+  it('cok buyuk skip degerinde hassasiyet kaybetmez', () => {
+    // Duz carpma 2^53'u asardi; Math.imul 32-bit sarmalamayi dogru yapar.
+    const big = 1_000_000;
+    const looped = createRng(9);
+    advance(looped, big);
+
+    expect(createRng(9, big)()).toBe(looped());
+  });
+
+  it('advance sifir adimda ureteci degistirmez', () => {
+    const rng = createRng(11);
+    advance(rng, 0);
+
+    expect(rng()).toBe(createRng(11)());
   });
 });

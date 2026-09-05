@@ -8,7 +8,7 @@ import {
   placePiece,
 } from './board';
 import { RNG_CALLS_PER_PIECE, generatePieceSet } from './pieces';
-import { advance, createRng } from './rng';
+import { createRng } from './rng';
 import { computeScore } from './score';
 import type { Board, FullLines, Piece, Point } from './types';
 
@@ -41,11 +41,15 @@ export interface GameState {
 
 const NO_LINES: FullLines = { rows: [], cols: [] };
 
-/** Seed ve o ana kadar cekilen parca sayisindan yeni tepsi uretir. */
+/**
+ * Seed ve o ana kadar cekilen parca sayisindan yeni tepsi uretir.
+ *
+ * Ureteci dongu ile ilerletmek yerine O(1) atlama kullaniliyor: uzun bir
+ * oyunda tepsi yenileme O(n^2)'ye cikiyordu ve bu is hamlenin bittigi anda,
+ * JS thread'inde yapiliyor.
+ */
 function drawTray(seed: number, piecesDrawn: number): Piece[] {
-  const rng = createRng(seed);
-  advance(rng, piecesDrawn * RNG_CALLS_PER_PIECE);
-  return generatePieceSet(rng, TRAY.PIECE_COUNT);
+  return generatePieceSet(createRng(seed, piecesDrawn * RNG_CALLS_PER_PIECE), TRAY.PIECE_COUNT);
 }
 
 /** Tepside kalan (kullanilmamis) parcalar. */
