@@ -6,6 +6,7 @@ import { StyleSheet } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { useSkiaWebReady } from '@/hooks/useSkiaWebReady';
 
 // expo-router bu adla export edilen bileseni hata siniri olarak kullanir.
 export { AppErrorBoundary as ErrorBoundary } from '@/components/AppErrorBoundary';
@@ -22,6 +23,9 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 });
 
 export default function RootLayout() {
+  // Web'de CanvasKit yuklenmeden Skia cizim yapamaz.
+  const skiaReady = useSkiaWebReady();
+
   // TODO(sprint-2): Skia atlaslari ve TODO(sprint-4): ses dosyalari yuklenene
   // kadar splash burada tutulacak. Su an bekletilecek asset yok.
   useEffect(() => {
@@ -29,6 +33,10 @@ export default function RootLayout() {
       /* splash zaten gizlenmisse onemsiz */
     });
   }, []);
+
+  if (!skiaReady) {
+    return null;
+  }
 
   return <RootLayoutNav />;
 }

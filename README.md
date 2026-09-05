@@ -47,6 +47,19 @@ npm run android
 > **Expo Go çalışmaz.** Proje Skia, MMKV (Nitro Modules) ve Reanimated 4 gibi
 > özel native modüller kullanacağı için **development build** zorunludur.
 
+## Tarayıcıda çalıştırma (en hızlı geliştirme döngüsü)
+
+```bash
+npm run web        # http://localhost:8081
+```
+
+Emülatör gerekmez, anında yenilenir. Skia web'de CanvasKit (WASM) ile çalışır;
+`public/canvaskit.wasm` `npx setup-skia-web public` ile bir kez kopyalanır.
+MMKV web'de `localStorage`'a düşer, yani kalıcılık da çalışır.
+
+Web bir **yayın hedefi değildir** — v1.0 yalnızca Google Play. Amacı geliştirme
+sırasında emülatör beklememektir.
+
 ## Komutlar
 
 | Komut               | Ne yapar                          |
@@ -111,15 +124,15 @@ testçi toplama işine sprint başlamadan başlanmalıdır.
 
 ## Mimari Kararlar
 
-| Karar                                | Gerekçe                                                                                             |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| **Expo SDK 57** (spec "54+" diyordu) | 54 üç sürüm eski; `expo-av` SDK 55'te tamamen kaldırıldı                                            |
-| **`expo-audio`**, `expo-av` değil    | `expo-av` SDK 55'te kaldırıldı, geri dönüşü yok                                                     |
-| **New Architecture zorunlu**         | Reanimated 4 ve MMKV v4 (Nitro) eski mimariyi desteklemiyor                                         |
-| **Web hedefi kaldırıldı**            | Platform hedefi iOS+Android. Ayrıca MMKV/Nitro'nun web desteği yok; Sprint 4'te zaten kırılacaktı   |
-| **`noUncheckedIndexedAccess: true`** | `board[y][x]` erişimi `Cell \| undefined` döner; sınır taşması bug'ları derleme zamanında yakalanır |
-| **Development build**, Expo Go değil | Skia + MMKV + Nitro Expo Go'da çalışmaz                                                             |
-| **pre-commit hızlı, pre-push tam**   | 40 sn'lik pre-commit commit'ten kaçınmaya yol açar; garanti aynı, dağıtımı farklı                   |
+| Karar                                | Gerekçe                                                                                                                                                                                                                       |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Expo SDK 57** (spec "54+" diyordu) | 54 üç sürüm eski; `expo-av` SDK 55'te tamamen kaldırıldı                                                                                                                                                                      |
+| **`expo-audio`**, `expo-av` değil    | `expo-av` SDK 55'te kaldırıldı, geri dönüşü yok                                                                                                                                                                               |
+| **New Architecture zorunlu**         | Reanimated 4 ve MMKV v4 (Nitro) eski mimariyi desteklemiyor                                                                                                                                                                   |
+| **Web geliştirme için açık**         | Sprint 0'da "MMKV'nin web desteği yok" gerekçesiyle kapatılmıştı; bu **yanlıştı** — MMKV v4'ün `localStorage` tabanlı web uygulaması, Skia'nın da CanvasKit desteği var. Web bir yayın hedefi değil, hızlı geliştirme döngüsü |
+| **`noUncheckedIndexedAccess: true`** | `board[y][x]` erişimi `Cell \| undefined` döner; sınır taşması bug'ları derleme zamanında yakalanır                                                                                                                           |
+| **Development build**, Expo Go değil | Skia + MMKV + Nitro Expo Go'da çalışmaz                                                                                                                                                                                       |
+| **pre-commit hızlı, pre-push tam**   | 40 sn'lik pre-commit commit'ten kaçınmaya yol açar; garanti aynı, dağıtımı farklı                                                                                                                                             |
 
 ## Bilinen Tuzaklar
 

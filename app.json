@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "istcarsiblok",
     "userInterfaceStyle": "automatic",
-    "platforms": ["ios", "android"],
+    "platforms": ["ios", "android", "web"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.celaldinc.istcarsiblok",
@@ -56,6 +56,11 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/images/icon.png"
     }
   }
 }
