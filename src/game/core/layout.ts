@@ -26,6 +26,16 @@ const step = (cellSize: number): number => cellSize + BOARD.CELL_GAP;
 
 export function computeBoardLayout(
   availableWidth: number,
+  /**
+   * Tahtaya ayrilan dikey alan. Verilmezse yalnizca genislik sinirlar.
+   *
+   * 10 satirli bir tahtada BAGLAYICI KISIT genelde yuksekliktir: 390dp
+   * genislikte hucre 40dp cikar ve tahta 418dp yer kaplar; skor satiri,
+   * tepsi, header ve tab bar eklenince tipik bir telefonda tasar. Tasma
+   * ScrollView olmadigi icin kirpilir ve kirpilan uclardan biri TEPSI,
+   * yani tek etkilesimli ogedir.
+   */
+  availableHeight: number = Number.POSITIVE_INFINITY,
   cols: number = BOARD.COLS,
   rows: number = BOARD.ROWS,
 ): BoardLayout {
@@ -33,10 +43,11 @@ export function computeBoardLayout(
   const totalGap = BOARD.CELL_GAP * (cols - 1);
 
   // Tamsayiya yuvarlanir: yarim piksel kenarlar Skia'da bulanik cizgi yapar.
-  const fitted = Math.floor((usable - totalGap) / cols);
+  const fromWidth = Math.floor((usable - totalGap) / cols);
+  const fromHeight = Math.floor((availableHeight - BOARD.CELL_GAP * (rows - 1)) / rows);
 
-  // Asiri dar ekranda bile pozitif kalmali; aksi halde tahta hic cizilmez.
-  const cellSize = Math.max(1, Math.min(BOARD.MAX_CELL_SIZE, fitted));
+  // Asiri dar/alcak ekranda bile pozitif kalmali; aksi halde tahta hic cizilmez.
+  const cellSize = Math.max(1, Math.min(BOARD.MAX_CELL_SIZE, fromWidth, fromHeight));
 
   const width = cellSize * cols + totalGap;
   const height = cellSize * rows + BOARD.CELL_GAP * (rows - 1);
@@ -79,9 +90,14 @@ export function pointToCell(
   return x >= 0 && x < cols && y >= 0 && y < rows ? { x, y } : null;
 }
 
-/** Kullanilabilir genislikte, LAYOUT.MIN_PLAYABLE_CELL_SIZE saglaniyor mu? */
-export function isPlayableWidth(availableWidth: number): boolean {
-  return computeBoardLayout(availableWidth).cellSize >= LAYOUT.MIN_PLAYABLE_CELL_SIZE;
+/** Verilen alanda LAYOUT.MIN_PLAYABLE_CELL_SIZE saglaniyor mu? */
+export function isPlayableSize(
+  availableWidth: number,
+  availableHeight: number = Number.POSITIVE_INFINITY,
+): boolean {
+  return (
+    computeBoardLayout(availableWidth, availableHeight).cellSize >= LAYOUT.MIN_PLAYABLE_CELL_SIZE
+  );
 }
 
 export interface TrayLayout {

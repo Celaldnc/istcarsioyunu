@@ -25,6 +25,14 @@ interface PlayAreaProps {
   /** Kullanilabilir genislik; layout bundan turetilir. */
   readonly width: number;
   readonly theme: Theme;
+  /**
+   * Oyun alanina ayrilan dikey alan. Verilmezse yalnizca genislik sinirlar.
+   *
+   * 10 satirli tahtada baglayici kisit genelde yukseklik: verilmezse tahta
+   * ekrandan tasar ve kirpilan uclardan biri tepsi, yani tek etkilesimli oge
+   * olur.
+   */
+  readonly maxHeight?: number;
   /** Gecerli bir birakma oldugunda cagrilir. */
   readonly onDrop: (trayIndex: number, origin: Point) => void;
 }
@@ -45,9 +53,16 @@ export const PLAY_PAN_TEST_ID = 'play-pan';
  * o yol Sprint 3'te olcum yapmadan girilecek bir karmasiklik degil.
  * Olcum altyapisi kurulunca (PerformanceMonitor) tekrar degerlendirilecek.
  */
-export function PlayArea({ board, tray, width, theme, onDrop }: PlayAreaProps) {
-  const boardLayout = useMemo(() => computeBoardLayout(width), [width]);
+export function PlayArea({ board, tray, width, theme, maxHeight, onDrop }: PlayAreaProps) {
   const trayLayout = useMemo(() => computeTrayLayout(width), [width]);
+
+  // Tahtaya kalan yukseklik: toplam alandan tepsi ve aradaki bosluk dusulur.
+  const boardBudget =
+    maxHeight === undefined
+      ? Number.POSITIVE_INFINITY
+      : maxHeight - trayLayout.height - LAYOUT.BOARD_TRAY_GAP;
+
+  const boardLayout = useMemo(() => computeBoardLayout(width, boardBudget), [width, boardBudget]);
   const trayTop = boardLayout.height + LAYOUT.BOARD_TRAY_GAP;
 
   const [drag, setDrag] = useState<DragState | null>(null);

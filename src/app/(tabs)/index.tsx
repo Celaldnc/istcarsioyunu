@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Pressable, StyleSheet, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { Heading, Text, View, useThemeColor } from '@/components/Themed';
@@ -25,6 +25,14 @@ export default function PlayScreen() {
   // Android uygulamayi arka planda haber vermeden oldurebiliyor.
   usePersistOnBackground(persistNow);
 
+  // Oyun alanina KALAN yukseklik olculur. Olcum flex:1 bir yuvada yapiliyor;
+  // dogrudan PlayArea'yi olcmek icerik <-> yukseklik geri besleme dongusu
+  // yaratirdi.
+  const [areaHeight, setAreaHeight] = useState<number>();
+  const handleAreaLayout = useCallback((event: LayoutChangeEvent) => {
+    setAreaHeight(event.nativeEvent.layout.height);
+  }, []);
+
   const handleDrop = useCallback(
     (trayIndex: number, origin: Point) => {
       play(trayIndex, origin);
@@ -39,7 +47,16 @@ export default function PlayScreen() {
         {highScore > 0 ? <ScoreBadge score={highScore} label="En iyi" /> : null}
       </View>
 
-      <PlayArea board={board} tray={tray} width={width} theme={DEFAULT_THEME} onDrop={handleDrop} />
+      <View style={styles.playAreaSlot} onLayout={handleAreaLayout}>
+        <PlayArea
+          board={board}
+          tray={tray}
+          width={width}
+          maxHeight={areaHeight}
+          theme={DEFAULT_THEME}
+          onDrop={handleDrop}
+        />
+      </View>
 
       {status === 'gameOver' ? (
         <View accessible accessibilityLabel="Oyun bitti" style={styles.gameOver}>
@@ -69,6 +86,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   scores: { flexDirection: 'row', alignItems: 'flex-end', gap: 32 },
+  playAreaSlot: { flex: 1, justifyContent: 'center', width: '100%' },
   gameOver: { alignItems: 'center', gap: 4 },
   gameOverText: { fontSize: 14, opacity: 0.7 },
   // Material dokunma hedefi 48dp

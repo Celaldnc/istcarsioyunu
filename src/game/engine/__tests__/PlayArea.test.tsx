@@ -159,3 +159,29 @@ describe('PlayArea', () => {
     expect(onDrop).toHaveBeenCalledWith(0, { x: 3, y: 4 });
   });
 });
+
+describe('PlayArea dikey alan siniri', () => {
+  it('maxHeight verilmezse tahta tam boyutta cizilir', async () => {
+    await mountArea([pieceOf('dot')]);
+
+    const rects = screen.getAllByTestId('skia-rounded-rect');
+    expect(rects[0]?.props.width).toBe(boardLayout.cellSize);
+  });
+
+  it('dar dikey alanda hucreler kuculur (tepsi kirpilmasin)', async () => {
+    const onDrop = jest.fn();
+    await render(
+      <PlayArea
+        board={createBoard()}
+        tray={[pieceOf('dot')]}
+        width={WIDTH}
+        maxHeight={320}
+        theme={CARSI}
+        onDrop={onDrop}
+      />,
+    );
+
+    const rects = screen.getAllByTestId('skia-rounded-rect');
+    expect(rects[0]?.props.width).toBeLessThan(boardLayout.cellSize);
+  });
+});

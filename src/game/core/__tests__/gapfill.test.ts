@@ -4,7 +4,7 @@ import {
   cellOrigin,
   computeBoardLayout,
   computeTrayLayout,
-  isPlayableWidth,
+  isPlayableSize,
   pointToCell,
   traySlotAt,
 } from '../layout';
@@ -88,16 +88,16 @@ describe('G2 computeBoardLayout kenar boslugu', () => {
   });
 });
 
-// --- G3: isPlayableWidth tam sinir ----------------------------------------
-describe('G3 isPlayableWidth sinir', () => {
+// --- G3: isPlayableSize tam sinir ----------------------------------------
+describe('G3 isPlayableSize sinir', () => {
   it('hucre tam MIN_PLAYABLE_CELL_SIZE oldugunda oynanabilir sayilir', () => {
     expect(computeBoardLayout(290).cellSize).toBe(LAYOUT.MIN_PLAYABLE_CELL_SIZE);
-    expect(isPlayableWidth(290)).toBe(true);
+    expect(isPlayableSize(290)).toBe(true);
   });
 
   it('bir hucre altinda oynanamaz sayilir', () => {
     expect(computeBoardLayout(285).cellSize).toBeLessThan(LAYOUT.MIN_PLAYABLE_CELL_SIZE);
-    expect(isPlayableWidth(285)).toBe(false);
+    expect(isPlayableSize(285)).toBe(false);
   });
 });
 

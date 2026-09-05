@@ -2,7 +2,7 @@ import {
   cellOrigin,
   computeBoardLayout,
   computeTrayLayout,
-  isPlayableWidth,
+  isPlayableSize,
   pieceSize,
   pointToCell,
   traySlotAt,
@@ -155,13 +155,13 @@ describe('pointToCell', () => {
   });
 });
 
-describe('isPlayableWidth', () => {
+describe('isPlayableSize', () => {
   it('desteklenen en dar ekran oynanabilir sayilir', () => {
-    expect(isPlayableWidth(LAYOUT.MIN_SUPPORTED_WIDTH)).toBe(true);
+    expect(isPlayableSize(LAYOUT.MIN_SUPPORTED_WIDTH)).toBe(true);
   });
 
   it('cok dar ekran oynanabilir sayilmaz', () => {
-    expect(isPlayableWidth(120)).toBe(false);
+    expect(isPlayableSize(120)).toBe(false);
   });
 });
 
@@ -245,5 +245,58 @@ describe('traySlotAt', () => {
 
   it('son yuvanin sag kenari haric tutulur', () => {
     expect(traySlotAt(tray, width, left + rowWidth)).toBeNull();
+  });
+});
+
+describe('computeBoardLayout yukseklik siniri', () => {
+  it('yukseklik verilmezse yalnizca genislik sinirlar (geriye uyum)', () => {
+    expect(computeBoardLayout(390)).toEqual(computeBoardLayout(390, Number.POSITIVE_INFINITY));
+  });
+
+  it('dar yukseklikte hucre kuculur', () => {
+    const wide = computeBoardLayout(390);
+    const short = computeBoardLayout(390, 300);
+
+    expect(short.cellSize).toBeLessThan(wide.cellSize);
+  });
+
+  it('tahta verilen dikey alani asmaz', () => {
+    for (const height of [280, 320, 380, 420, 500]) {
+      expect(computeBoardLayout(390, height).height).toBeLessThanOrEqual(height);
+    }
+  });
+
+  it('baglayici kisit hangisiyse o uygulanir', () => {
+    // Genis ama alcak: yukseklik baglar
+    expect(computeBoardLayout(2000, 300).cellSize).toBe(computeBoardLayout(390, 300).cellSize);
+    // Dar ama yuksek: genislik baglar
+    expect(computeBoardLayout(320, 2000).cellSize).toBe(computeBoardLayout(320).cellSize);
+  });
+
+  it('asiri alcak alanda bile pozitif hucre boyutu dondurur', () => {
+    expect(computeBoardLayout(390, 5).cellSize).toBeGreaterThan(0);
+  });
+
+  it('tipik telefonda tahta + tepsi ekrana sigar', () => {
+    // 411x731dp cihaz: status bar 24, header 56, tab bar 49, alt inset 34,
+    // skor satiri ~50, dikey padding 24, tahta-tepsi bosluğu 24.
+    const width = 411;
+    const tray = computeTrayLayout(width);
+    const boardBudget = 731 - 24 - 56 - 49 - 34 - 50 - 24 - LAYOUT.BOARD_TRAY_GAP - tray.height;
+
+    const layout = computeBoardLayout(width, boardBudget);
+
+    expect(layout.height).toBeLessThanOrEqual(boardBudget);
+    expect(layout.cellSize).toBeGreaterThanOrEqual(LAYOUT.MIN_PLAYABLE_CELL_SIZE);
+  });
+});
+
+describe('isPlayableSize yukseklik ile', () => {
+  it('yeterli alanda oynanabilir', () => {
+    expect(isPlayableSize(390, 500)).toBe(true);
+  });
+
+  it('cok alcak alanda oynanabilir sayilmaz', () => {
+    expect(isPlayableSize(390, 200)).toBe(false);
   });
 });
