@@ -134,6 +134,18 @@ export const COMBO = {
   MAX_STREAK_MULTIPLIER: 4,
 } as const;
 
+export const SPRITE = {
+  /**
+   * Hucre kenari bunun altindaysa ince detaylar (susam, pudra, cekic izi)
+   * cizilmez: 22px'lik tepsi onizlemesinde 1px'lik nokta gurultu olur.
+   */
+  DETAIL_MIN_SIZE: 26,
+  /** Ust parlaklik seridi (blok "kabarik" dursun) */
+  GLOSS_OPACITY: 0.16,
+  /** Alt golge seridi */
+  SHADOW_OPACITY: 0.12,
+} as const;
+
 export const FX = {
   /** Esnaf baloncugunun ekranda kalma suresi (ms). */
   ESNAF_SHOW_MS: 2600,

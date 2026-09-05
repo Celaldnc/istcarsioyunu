@@ -1,12 +1,14 @@
-import { Canvas, RoundedRect } from '@shopify/react-native-skia';
+import { Canvas } from '@shopify/react-native-skia';
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { BOARD, TRAY } from '@/constants/config';
+import { CellSprite } from './CellSprite';
+
+import { TRAY } from '@/constants/config';
 import { pieceSize, type TrayLayout } from '@/game/core/layout';
 import type { Piece } from '@/game/core/types';
 import { shapeLabel } from '@/game/data/shapeLabels';
-import { colorFor, type Theme } from '@/game/data/themes';
+import type { Theme } from '@/game/data/themes';
 
 interface PieceTrayProps {
   /** Tepsideki parcalar. Kullanilmis yuvalar undefined kalir. */
@@ -53,15 +55,14 @@ function TraySlot({ piece, index, layout, theme, dimmed }: TraySlotProps) {
     >
       <Canvas style={StyleSheet.absoluteFill}>
         {piece.shape.cells.map((cell) => (
-          <RoundedRect
+          <CellSprite
             key={`${cell.x}-${cell.y}`}
             x={offsetX + cell.x * step}
             y={offsetY + cell.y * step}
-            width={layout.cellSize}
-            height={layout.cellSize}
-            r={BOARD.CELL_RADIUS}
+            size={layout.cellSize}
+            colorId={piece.colorId}
+            theme={theme}
             opacity={dimmed ? 0.25 : 1}
-            color={colorFor(theme, piece.colorId)}
           />
         ))}
       </Canvas>

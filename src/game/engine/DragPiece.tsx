@@ -1,11 +1,13 @@
-import { Canvas, RoundedRect } from '@shopify/react-native-skia';
+import { Canvas } from '@shopify/react-native-skia';
 import { StyleSheet, View } from 'react-native';
+
+import { CellSprite } from './CellSprite';
 
 import { BOARD } from '@/constants/config';
 import type { BoardLayout } from '@/game/core/layout';
 import { dragPixelOrigin } from '@/game/core/placement';
 import type { Piece, Point } from '@/game/core/types';
-import { colorFor, type Theme } from '@/game/data/themes';
+import type { Theme } from '@/game/data/themes';
 
 export const DRAG_PIECE_TEST_ID = 'drag-piece';
 
@@ -36,15 +38,14 @@ export function DragPiece({ piece, pointer, layout, theme }: DragPieceProps) {
     <View style={styles.overlay} testID={DRAG_PIECE_TEST_ID}>
       <Canvas style={StyleSheet.absoluteFill}>
         {piece.shape.cells.map((cell) => (
-          <RoundedRect
+          <CellSprite
             key={`${cell.x}-${cell.y}`}
             x={origin.x + cell.x * step}
             y={origin.y + cell.y * step}
-            width={layout.cellSize}
-            height={layout.cellSize}
-            r={BOARD.CELL_RADIUS}
+            size={layout.cellSize}
+            colorId={piece.colorId}
+            theme={theme}
             opacity={0.9}
-            color={colorFor(theme, piece.colorId)}
           />
         ))}
       </Canvas>

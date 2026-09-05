@@ -12,6 +12,12 @@ import { THEME } from '@/constants/config';
  * invariant'i koruyor.
  */
 
+/**
+ * Bir renk kimliginin hucrede nasil "esyalastigi". Cizim engine/CellSprite'ta;
+ * tema yalnizca hangi kimligin hangi esya oldugunu soyler.
+ */
+export type SpriteKind = 'simit' | 'cay' | 'nazar' | 'lokum' | 'fistik' | 'bakir';
+
 export interface Theme {
   readonly id: string;
   readonly name: string;
@@ -27,6 +33,8 @@ export interface Theme {
   readonly ghostInvalid: string;
   /** Temizlenen cizginin anlik parlamasi */
   readonly flash: string;
+  /** Renk kimligi -> esya; palet ile ayni uzunlukta olmak zorunda. */
+  readonly sprites: readonly SpriteKind[];
 }
 
 /** Kapalicarsi: sicak turuncu-sari, bakir ve cay tonlari. */
@@ -46,6 +54,7 @@ export const CARSI: Theme = {
   ghostValid: '#4E8A3C',
   ghostInvalid: '#B33A3A',
   flash: '#FFF6E0',
+  sprites: ['simit', 'cay', 'nazar', 'lokum', 'fistik', 'bakir'],
 };
 
 export const THEMES: readonly Theme[] = [CARSI];
@@ -57,7 +66,12 @@ export function colorFor(theme: Theme, colorId: number): string {
   return theme.palette[colorId] ?? theme.emptyCell;
 }
 
-/** Palet uzunlugunun config ile tutarli oldugunu calisma aninda da dogrular. */
+/** colorId icin esya; tanimsiz kimlikte en yalin olan (bakir). */
+export function spriteFor(theme: Theme, colorId: number): SpriteKind {
+  return theme.sprites[colorId] ?? 'bakir';
+}
+
+/** Palet ve esya listesinin config ile tutarli oldugunu calisma aninda da dogrular. */
 export function isPaletteValid(theme: Theme): boolean {
-  return theme.palette.length === THEME.PALETTE_SIZE;
+  return theme.palette.length === THEME.PALETTE_SIZE && theme.sprites.length === THEME.PALETTE_SIZE;
 }

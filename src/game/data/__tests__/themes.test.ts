@@ -1,5 +1,5 @@
 import { shapeLabel } from '../shapeLabels';
-import { CARSI, DEFAULT_THEME, THEMES, colorFor, isPaletteValid } from '../themes';
+import { CARSI, DEFAULT_THEME, THEMES, colorFor, isPaletteValid, spriteFor } from '../themes';
 
 import { THEME } from '@/constants/config';
 import { SHAPES } from '@/game/core/pieces';
@@ -67,5 +67,23 @@ describe('shapeLabel', () => {
 
   it('bilinmeyen sekilde genel bir ada duser', () => {
     expect(shapeLabel('bilinmeyen')).toBe('parça');
+  });
+});
+
+describe('sprite eslemesi', () => {
+  it.each(THEMES.map((t) => [t.id, t] as const))(
+    '%s: her renk kimliginin bir esyasi vardir',
+    (_id, theme) => {
+      expect(theme.sprites).toHaveLength(THEME.PALETTE_SIZE);
+    },
+  );
+
+  it('tanimli kimligi cozer', () => {
+    expect(spriteFor(CARSI, 0)).toBe('simit');
+    expect(spriteFor(CARSI, 2)).toBe('nazar');
+  });
+
+  it('tanimsiz kimlikte en yalin esyaya duser', () => {
+    expect(spriteFor(CARSI, 99)).toBe('bakir');
   });
 });

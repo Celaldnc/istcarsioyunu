@@ -2,10 +2,12 @@ import { Canvas, RoundedRect } from '@shopify/react-native-skia';
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { CellSprite } from './CellSprite';
+
 import { BOARD } from '@/constants/config';
 import { cellOrigin, type BoardLayout } from '@/game/core/layout';
 import type { Board } from '@/game/core/types';
-import { colorFor, type Theme } from '@/game/data/themes';
+import type { Theme } from '@/game/data/themes';
 
 interface GameCanvasProps {
   readonly board: Board;
@@ -35,7 +37,8 @@ function GameCanvasImpl({ board, layout, theme }: GameCanvasProps) {
           row.map((cell, x) => {
             const origin = cellOrigin(layout, x, y);
 
-            return (
+            // Bos hucre duz zemin; dolu hucre carsidan bir esya.
+            return cell === null ? (
               <RoundedRect
                 key={`${x}-${y}`}
                 x={origin.x}
@@ -43,7 +46,16 @@ function GameCanvasImpl({ board, layout, theme }: GameCanvasProps) {
                 width={layout.cellSize}
                 height={layout.cellSize}
                 r={BOARD.CELL_RADIUS}
-                color={cell === null ? theme.emptyCell : colorFor(theme, cell)}
+                color={theme.emptyCell}
+              />
+            ) : (
+              <CellSprite
+                key={`${x}-${y}`}
+                x={origin.x}
+                y={origin.y}
+                size={layout.cellSize}
+                colorId={cell}
+                theme={theme}
               />
             );
           }),

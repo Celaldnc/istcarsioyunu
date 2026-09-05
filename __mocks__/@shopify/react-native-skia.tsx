@@ -29,4 +29,16 @@ export const Rect = createStub('skia-rect');
 export const RoundedRect = createStub('skia-rounded-rect');
 export const Fill = createStub('skia-fill');
 export const Circle = createStub('skia-circle');
+export const Oval = createStub('skia-oval');
+export const Line = createStub('skia-line');
 export const Path = createStub('skia-path');
+
+/** Geometri yardimcilari: gercek Skia'da SkRect/SkRRect, burada duz nesne. */
+export const rect = (x: number, y: number, width: number, height: number) => ({
+  x,
+  y,
+  width,
+  height,
+});
+export const rrect = (r: ReturnType<typeof rect>, rx: number, ry: number) => ({ rect: r, rx, ry });
+export const vec = (x: number, y: number) => ({ x, y });
