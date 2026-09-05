@@ -25,6 +25,8 @@ export interface ScoreInput {
   readonly streak?: number;
   /** Temizlenen cizgilerden kaci tek renkli ("Cini"). */
   readonly ciniLines?: number;
+  /** Cini bonusu carpani (esnaf perk'i). Varsayilan 1. */
+  readonly ciniMultiplier?: number;
 }
 
 export interface ScoreResult {
@@ -86,7 +88,11 @@ export function computeScore(input: ScoreInput): ScoreResult {
 
   // Cini sayisi bozuksa (NaN, negatif) bonus verilmez; toplam asla NaN olmaz.
   const ciniCount = Number.isInteger(input.ciniLines) ? Math.max(0, input.ciniLines ?? 0) : 0;
-  const ciniBonus = ciniCount * SCORING.CINI_BONUS;
+  const ciniMultiplier =
+    Number.isFinite(input.ciniMultiplier) && (input.ciniMultiplier ?? 1) > 0
+      ? (input.ciniMultiplier ?? 1)
+      : 1;
+  const ciniBonus = Math.round(ciniCount * SCORING.CINI_BONUS * ciniMultiplier);
 
   return {
     lineCount,

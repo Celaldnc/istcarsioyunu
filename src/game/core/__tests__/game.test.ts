@@ -1,9 +1,26 @@
 import { countFilledCells, isBoardEmpty } from '../board';
 import { playPiece, restart, startGame, type GameState } from '../game';
 import { shapeById } from '../pieces';
+import { CLASSIC_RULES } from '../rules';
 import type { Board, Piece } from '../types';
 
 import { BOARD, SCORING, TRAY } from '@/constants/config';
+
+/** Canli Carsi alanlarinin klasik (kapali) varsayilanlari; literal kurulumlar icin. */
+const LIVE_DEFAULTS = {
+  mode: 'classic' as const,
+  esnafId: 'cirak',
+  rules: CLASSIC_RULES,
+  levelId: null,
+  moves: 0,
+  cat: null,
+  gull: null,
+  curses: [],
+  hagglesLeft: 0,
+  progress: { lines: 0, cini: 0, synergy: 0, bridge: 0 },
+  events: [],
+  lastBonuses: [],
+};
 
 const SEED = 20260905;
 
@@ -143,6 +160,7 @@ describe('playPiece', () => {
       comboStreak: 0,
       lastCini: { rows: [], cols: [] },
       teaBreaksLeft: 1,
+      ...LIVE_DEFAULTS,
     };
 
     const next = playPiece(state, 0, { x: BOARD.COLS - 1, y: 0 });
@@ -220,6 +238,7 @@ describe('hamlenin oyunu bitirmesi', () => {
       comboStreak: 0,
       lastCini: { rows: [], cols: [] },
       teaBreaksLeft: 1,
+      ...LIVE_DEFAULTS,
     };
 
     const next = playPiece(state, 0, { x: 5, y: 0 });

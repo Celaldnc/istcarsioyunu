@@ -1,3 +1,4 @@
+import { OFF_CELL, isFilledCell, isOffCell } from './types';
 import type { Board, Cell, FullLines, Piece, Point } from './types';
 
 import { BOARD } from '@/constants/config';
@@ -15,12 +16,29 @@ const key = (x: number, y: number): string => `${x},${y}`;
  * Hucre dolu mu?
  *
  * DIKKAT: truthy kontrolu yapilamaz. Renk kimligi 0 gecerli bir degerdir ve
- * falsy oldugu icin "bos" saniliridi.
+ * falsy oldugu icin "bos" saniliridi. Tahta disi (OFF_CELL) dolu SAYILMAZ.
  */
-const isFilled = (cell: Cell | undefined): boolean => cell !== null && cell !== undefined;
+const isFilled = isFilledCell;
 
 export function createBoard(cols: number = BOARD.COLS, rows: number = BOARD.ROWS): Board {
   return Array.from({ length: rows }, () => Array.from({ length: cols }, () => null));
+}
+
+/**
+ * Metin maskesinden sekilli tahta: '#' tahta disi, diger her karakter bos
+ * hucre. Satir sayisi ve genislik BOARD ile ayni olmak zorunda; aksi halde
+ * layout/placement hesaplari sapar.
+ */
+export function createBoardFromMask(mask: readonly string[]): Board {
+  if (mask.length !== BOARD.ROWS || mask.some((row) => row.length !== BOARD.COLS)) {
+    throw new Error(`Maske ${BOARD.COLS}x${BOARD.ROWS} olmali.`);
+  }
+  return mask.map((row) => [...row].map((ch) => (ch === '#' ? OFF_CELL : null)));
+}
+
+/** Oynanabilir (tahta ici) hucre sayisi. */
+export function countPlayableCells(board: Board): number {
+  return board.reduce((total, row) => total + row.filter((cell) => !isOffCell(cell)).length, 0);
 }
 
 export function boardWidth(board: Board): number {
@@ -73,21 +91,30 @@ export function placePiece(board: Board, piece: Piece, origin: Point): Board {
   );
 }
 
+/**
+ * Cizgi "tam" mi: bos hucre yok VE en az bir dolu hucre var.
+ * Tamamen tahta disi bir cizgi (sekilli tahtada su seridi) tam sayilmaz;
+ * aksi halde her hamlede "temizlenir" ve puan verirdi.
+ */
+const isLineFull = (cells: readonly (Cell | undefined)[]): boolean =>
+  cells.every((cell) => cell !== null && cell !== undefined) && cells.some(isFilled);
+
 /** Tam dolu satir ve sutunlarin indekslerini bulur. */
 export function findFullLines(board: Board): FullLines {
-  const rows = board.flatMap((row, y) => (row.every(isFilled) ? [y] : []));
+  const rows = board.flatMap((row, y) => (isLineFull(row) ? [y] : []));
 
   const cols = Array.from({ length: boardWidth(board) }, (_, x) => x).filter((x) =>
-    board.every((row) => isFilled(row[x])),
+    isLineFull(board.map((row) => row[x])),
   );
 
   return { rows, cols };
 }
 
-/** Dizideki tum hucreler dolu ve ayni renkte mi? */
+/** Dizideki tum DOLU hucreler ayni renkte mi? (tahta disi hucreler sayilmaz) */
 const isMonochrome = (cells: readonly (Cell | undefined)[]): boolean => {
-  const first = cells[0];
-  return isFilled(first) && cells.every((cell) => cell === first);
+  const filled = cells.filter(isFilled);
+  const first = filled[0];
+  return first !== undefined && filled.every((cell) => cell === first);
 };
 
 /**
@@ -113,8 +140,11 @@ export function applyClears(board: Board, lines: FullLines): Board {
   const clearedRows = new Set(lines.rows);
   const clearedCols = new Set(lines.cols);
 
+  // Tahta disi hucreler temizlemeden etkilenmez; yalnizca dolu hucre bosalir.
   return board.map((row, y) =>
-    row.map((cell, x) => (clearedRows.has(y) || clearedCols.has(x) ? null : cell)),
+    row.map((cell, x) =>
+      (clearedRows.has(y) || clearedCols.has(x)) && isFilled(cell) ? null : cell,
+    ),
   );
 }
 

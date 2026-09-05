@@ -1,3 +1,4 @@
+import { CLASSIC_RULES } from '../rules';
 import { createBoard } from '../board';
 import { playPiece, startGame, type GameState } from '../game';
 import {
@@ -14,6 +15,22 @@ import { createRng, pickWeighted } from '../rng';
 import type { Board, Piece } from '../types';
 
 import { BOARD, DRAG, LAYOUT, SCORING, THEME, TRAY } from '@/constants/config';
+
+/** Canli Carsi alanlarinin klasik (kapali) varsayilanlari; literal kurulumlar icin. */
+const LIVE_DEFAULTS = {
+  mode: 'classic' as const,
+  esnafId: 'cirak',
+  rules: CLASSIC_RULES,
+  levelId: null,
+  moves: 0,
+  cat: null,
+  gull: null,
+  curses: [],
+  hagglesLeft: 0,
+  progress: { lines: 0, cini: 0, synergy: 0, bridge: 0 },
+  events: [],
+  lastBonuses: [],
+};
 
 const layout = computeBoardLayout(390);
 
@@ -190,6 +207,7 @@ describe('G7 playPiece skor akisi (deterministik kurulum)', () => {
     comboStreak: 0,
     lastCini: { rows: [], cols: [] },
     teaBreaksLeft: 1,
+    ...LIVE_DEFAULTS,
   });
 
   it('son bosluga yerlestirme satiri temizler, puan ve lastGain verir', () => {

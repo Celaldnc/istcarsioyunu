@@ -66,6 +66,66 @@ export const TEA_BREAK = {
   COLS: 2,
 } as const;
 
+/**
+ * Esya rolleri: hangi renk kimligi hangi esya. Sinerji (simit+cay),
+ * marti (simit) ve nazar korumasi bu indekslere bakar; her temanin
+ * `sprites` listesi bu sirayi izlemek ZORUNDA (test korur).
+ */
+export const ROLES = {
+  SIMIT: 0,
+  CAY: 1,
+  NAZAR: 2,
+  LOKUM: 3,
+  FISTIK: 4,
+  BAKIR: 5,
+} as const;
+
+export const CAT = {
+  /** Oksanan kedi kac hamle yerinden kalkmaz. */
+  REST_TURNS: 3,
+} as const;
+
+export const GULL = {
+  /** Konduktan kac hamle sonra dalar. */
+  PERCH_TURNS: 2,
+  /** Simit atma bonusu. */
+  FEED_BONUS: 30,
+} as const;
+
+export const NAZAR = {
+  /** Lanetli hucre kac hamle sonra yayilir. */
+  SPREAD_TURNS: 6,
+  /** Lanetli hucre temizlenince bonus. */
+  CLEAR_BONUS: 60,
+  /** Her hamlede yeni nazar dogma olasiligi (dolu hucre varsa). */
+  SPAWN_CHANCE: 0.06,
+  /** Tahtada ayni anda en fazla kac lanet olabilir. */
+  MAX_ACTIVE: 2,
+} as const;
+
+export const SYNERGY = {
+  /** Sinerji cifti basina bonus (kahvalti, fistikli lokum). */
+  PAIR_BONUS: 40,
+} as const;
+
+export const MAKAM = {
+  /** Melodinin nota sayisi; seri bu sayiya ulasinca "makam tamamlandi". */
+  NOTES: 8,
+  /** Makam tamamlama bonusu. */
+  COMPLETE_BONUS: 100,
+} as const;
+
+export const HAGGLE = {
+  /** Oyun basina pazarlik hakki. */
+  PER_GAME: 3,
+  /** Basarisiz pazarligin bedeli (puan). */
+  FAIL_PENALTY: 30,
+  /** Ibrenin bir tur salinim suresi (ms). */
+  SWEEP_MS: 900,
+  /** Yesil bolgenin ibre yolundaki payi (0-1). */
+  TARGET_WIDTH: 0.22,
+} as const;
+
 export const THEME = {
   /**
    * Bir temadaki farkli blok gorseli sayisi (simit, caydanlik, nazar...).
@@ -120,6 +180,11 @@ export const SCORING = {
    * tek cizgi puaninin (10) belirgin ustunde ki hedeflemeye deger olsun.
    */
   CINI_BONUS: 50,
+  /**
+   * Bogaz tahtasinda (ortada su seridi) iki yakayi birden tamamlayan satir
+   * "Kopru" kurar; satir basina bonus.
+   */
+  BRIDGE_BONUS: 50,
 } as const;
 
 export const COMBO = {

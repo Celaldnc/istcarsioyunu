@@ -3,11 +3,28 @@ import { getAppStore } from '../storage';
 
 import { canPlace } from '@/game/core/board';
 import { shapeById } from '@/game/core/pieces';
+import { CLASSIC_RULES } from '@/game/core/rules';
 import type { Piece, Point } from '@/game/core/types';
 
 import { BOARD } from '@/constants/config';
 import { takeTeaBreak } from '@/game/core/game';
 import { useGameStore } from '@/game/store/gameStore';
+
+/** Canli Carsi alanlarinin klasik (kapali) varsayilanlari; literal kurulumlar icin. */
+const LIVE_DEFAULTS = {
+  mode: 'classic' as const,
+  esnafId: 'cirak',
+  rules: CLASSIC_RULES,
+  levelId: null,
+  moves: 0,
+  cat: null,
+  gull: null,
+  curses: [],
+  hagglesLeft: 0,
+  progress: { lines: 0, cini: 0, synergy: 0, bridge: 0 },
+  events: [],
+  lastBonuses: [],
+};
 
 const SEED = 20260905;
 
@@ -181,6 +198,7 @@ describe('oyun sonunda yuksek skor', () => {
       comboStreak: 0,
       lastCini: { rows: [], cols: [] },
       teaBreaksLeft: 1,
+      ...LIVE_DEFAULTS,
     });
 
     const accepted = useGameStore.getState().play(0, { x: 5, y: 0 });

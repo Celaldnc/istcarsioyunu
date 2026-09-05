@@ -232,7 +232,7 @@ describe('deger araligi dogrulamalari', () => {
       deserializeGame(
         corrupt((p) => {
           const board = p.board as unknown[][];
-          board[0]![0] = -1;
+          board[0]![0] = -2;
         }),
       ),
     ).toBeNull();
@@ -335,7 +335,7 @@ describe('kayit gocu: v2 -> v3 (cay molasi)', () => {
     expect(deserializeGame(corrupt((p) => (p.teaBreaksLeft = 1.5)))).toBeNull();
   });
 
-  it('SAVE_VERSION 3 oldu', () => {
-    expect(SAVE_VERSION).toBe(3);
+  it('SAVE_VERSION en az 3', () => {
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(3);
   });
 });

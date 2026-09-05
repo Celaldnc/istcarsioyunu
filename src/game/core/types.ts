@@ -42,3 +42,18 @@ export interface FullLines {
   readonly rows: readonly number[];
   readonly cols: readonly number[];
 }
+
+/**
+ * Tahta DISI hucre (sekilli tahtalar: Galata silueti, Bogaz'in suyu...).
+ *
+ * Renk kimlikleri 0'dan basladigi icin -1 hicbir paletle cakismaz. Bu hucreye
+ * parca konamaz, temizlenmez, "dolu" da sayilmaz; yalnizca satir/sutunun
+ * tamamlanmasi icin gereken hucre sayisini azaltir.
+ */
+export const OFF_CELL = -1;
+
+export const isOffCell = (cell: Cell | undefined): boolean => cell === OFF_CELL;
+
+/** Bir parcanin doldurdugu hucre mi? (bos ve tahta disi degil) */
+export const isFilledCell = (cell: Cell | undefined): cell is ColorId =>
+  typeof cell === 'number' && cell >= 0;

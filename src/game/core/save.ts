@@ -1,6 +1,12 @@
 import { isGameOver } from './board';
-import type { GameState, GameStatus } from './game';
+import { withCatBlocked, type Cat } from './cat';
+import type { GameState, GameStatus, Progress } from './game';
+import type { Gull } from './gull';
+import { levelById } from './levels';
+import type { Curse } from './nazar';
 import { shapeById } from './pieces';
+import { DEFAULT_ESNAF_ID, rulesFor, type GameMode } from './rules';
+import { OFF_CELL } from './types';
 import type { Board, Cell, Piece } from './types';
 
 import { BOARD, TEA_BREAK, THEME, TRAY } from '@/constants/config';
@@ -15,6 +21,7 @@ import { BOARD, TEA_BREAK, THEME, TRAY } from '@/constants/config';
  *   geometriyle geri gelirdi.
  * - rng FONKSIYONU saklanmaz. seed + o ana kadar cekilen parca sayisi yeterli;
  *   uretec geri yuklerken ayni noktaya sarilir.
+ * - KURALLAR saklanmaz; mode + esnaf + seviyeden yeniden turetilir.
  * - Her cozumleme adimi dogrulanir. Bozuk bir kayit null dondurur; cagiran
  *   taraf yeni oyun baslatir. Kaydin oyunu cokertmemesi, kaydi kurtarmaktan
  *   onemli.
@@ -22,9 +29,9 @@ import { BOARD, TEA_BREAK, THEME, TRAY } from '@/constants/config';
  * SURUMLEME
  * Eski surumler ATILMAZ, GOC ETTIRILIR. Oyuncunun devam eden oyununu bir
  * guncelleme yuzunden kaybetmesi kabul edilemez. Her surum icin tip DONDURULUR
- * (SavedGameV1'e bir daha dokunulmaz) ve MIGRATIONS zinciri eksik alanlari
- * varsayilanla doldurur. Dogrulama yalnizca GUNCEL sema icin yazilir; goc
- * zinciri her kaydi once guncel semaya cikarir.
+ * ve MIGRATIONS zinciri eksik alanlari varsayilanla doldurur. Dogrulama
+ * yalnizca GUNCEL sema icin yazilir; goc zinciri her kaydi once guncel semaya
+ * cikarir.
  *
  * SAVE_VERSION su durumlarda artirilmalidir:
  *  - Yeni alan eklendiginde
@@ -34,14 +41,14 @@ import { BOARD, TEA_BREAK, THEME, TRAY } from '@/constants/config';
  */
 
 /** Guncel kayit bicimi surumu. */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 interface SavedSlot {
   readonly shapeId: string;
   readonly colorId: number;
 }
 
-/** v1 — DONDURULDU. Yeni alan eklemeyin; yeni surum acin. */
+/** v1 — DONDURULDU. */
 interface SavedGameV1 {
   readonly version: 1;
   readonly board: readonly (readonly Cell[])[];
@@ -58,13 +65,27 @@ interface SavedGameV2 extends Omit<SavedGameV1, 'version'> {
   readonly comboStreak: number;
 }
 
-/** v3 — "Cay molasi" hakki eklendi. */
+/** v3 — DONDURULDU. "Cay molasi" hakki eklendi. */
 interface SavedGameV3 extends Omit<SavedGameV2, 'version'> {
   readonly version: 3;
   readonly teaBreaksLeft: number;
 }
 
-type SavedGame = SavedGameV3;
+/** v4 — Canli Carsi: mod, esnaf, seviye, kedi, marti, nazar, pazarlik, ilerleme. */
+interface SavedGameV4 extends Omit<SavedGameV3, 'version'> {
+  readonly version: 4;
+  readonly mode: GameMode;
+  readonly esnafId: string;
+  readonly levelId: string | null;
+  readonly moves: number;
+  readonly cat: Cat | null;
+  readonly gull: Gull | null;
+  readonly curses: readonly Curse[];
+  readonly hagglesLeft: number;
+  readonly progress: Progress;
+}
+
+type SavedGame = SavedGameV4;
 
 /**
  * Surumden bir sonrakine gecis. Eksik alanlar VARSAYILANLA doldurulur;
@@ -77,6 +98,20 @@ const MIGRATIONS: Readonly<
   1: (raw) => ({ ...raw, version: 2, comboStreak: 0 }),
   // v2'de cay molasi yoktu; eski oyuna tam hak vermek oyuncunun lehine.
   2: (raw) => ({ ...raw, version: 3, teaBreaksLeft: TEA_BREAK.PER_GAME }),
+  // v3 oyunlari klasik kurallarla oynaniyordu; canli ogeler kapali kalir.
+  3: (raw) => ({
+    ...raw,
+    version: 4,
+    mode: 'classic',
+    esnafId: DEFAULT_ESNAF_ID,
+    levelId: null,
+    moves: 0,
+    cat: null,
+    gull: null,
+    curses: [],
+    hagglesLeft: 0,
+    progress: { lines: 0, cini: 0, synergy: 0, bridge: 0 },
+  }),
 };
 
 export function serializeGame(state: GameState): string {
@@ -92,6 +127,15 @@ export function serializeGame(state: GameState): string {
     status: state.status,
     comboStreak: state.comboStreak,
     teaBreaksLeft: state.teaBreaksLeft,
+    mode: state.mode,
+    esnafId: state.esnafId,
+    levelId: state.levelId,
+    moves: state.moves,
+    cat: state.cat,
+    gull: state.gull,
+    curses: state.curses,
+    hagglesLeft: state.hagglesLeft,
+    progress: state.progress,
   };
 
   return JSON.stringify(payload);
@@ -101,7 +145,10 @@ const isFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 
 const isStatus = (value: unknown): value is GameStatus =>
-  value === 'playing' || value === 'gameOver';
+  value === 'playing' || value === 'gameOver' || value === 'won';
+
+const isMode = (value: unknown): value is GameMode =>
+  value === 'classic' || value === 'canli' || value === 'daily' || value === 'journey';
 
 /**
  * Renk kimligi paletin icinde mi?
@@ -124,10 +171,12 @@ const isColorId = (value: unknown): value is number =>
 const isPiecesDrawn = (value: unknown): value is number =>
   Number.isInteger(value) && (value as number) >= 0 && (value as number) % TRAY.PIECE_COUNT === 0;
 
-/** Negatif olmayan tamsayi (seri, kalan hak...). */
+/** Negatif olmayan tamsayi (seri, kalan hak, hamle...). */
 const isCount = (value: unknown): value is number =>
   Number.isInteger(value) && (value as number) >= 0;
-const isStreak = isCount;
+
+const isCoord = (value: unknown, max: number): value is number =>
+  Number.isInteger(value) && (value as number) >= 0 && (value as number) < max;
 
 function parseBoard(value: unknown): Board | null {
   if (!Array.isArray(value) || value.length !== BOARD.ROWS) {
@@ -142,7 +191,7 @@ function parseBoard(value: unknown): Board | null {
     }
     const cells: Cell[] = [];
     for (const cell of row) {
-      if (cell !== null && !isColorId(cell)) {
+      if (cell !== null && cell !== OFF_CELL && !isColorId(cell)) {
         return null;
       }
       cells.push(cell);
@@ -184,6 +233,71 @@ function parseTray(value: unknown): (Piece | undefined)[] | null {
   }
 
   return tray;
+}
+
+/** Tahta ici koordinat + sayac tasiyan nesne (kedi, lanet). */
+function parseCell(value: unknown, counterKey: string): { x: number; y: number; n: number } | null {
+  if (typeof value !== 'object' || value === null) {
+    return null;
+  }
+  const { x, y } = value as { x?: unknown; y?: unknown };
+  const n = (value as Record<string, unknown>)[counterKey];
+  if (!isCoord(x, BOARD.COLS) || !isCoord(y, BOARD.ROWS) || !isCount(n)) {
+    return null;
+  }
+  return { x, y, n };
+}
+
+/** null gecerli; aksi halde parseCell. Bozuksa undefined. */
+function parseCat(value: unknown): Cat | null | undefined {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const cell = parseCell(value, 'restTurns');
+  return cell === null ? undefined : { x: cell.x, y: cell.y, restTurns: cell.n };
+}
+
+function parseGull(value: unknown): Gull | null | undefined {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value !== 'object') {
+    return undefined;
+  }
+  const { col, turnsLeft } = value as { col?: unknown; turnsLeft?: unknown };
+  if (!isCoord(col, BOARD.COLS) || !isCount(turnsLeft)) {
+    return undefined;
+  }
+  return { col, turnsLeft };
+}
+
+function parseCurses(value: unknown): Curse[] | null {
+  if (value === undefined) {
+    return [];
+  }
+  if (!Array.isArray(value)) {
+    return null;
+  }
+  const curses: Curse[] = [];
+  for (const item of value) {
+    const cell = parseCell(item, 'turnsLeft');
+    if (cell === null) {
+      return null;
+    }
+    curses.push({ x: cell.x, y: cell.y, turnsLeft: cell.n });
+  }
+  return curses;
+}
+
+function parseProgress(value: unknown): Progress | null {
+  if (typeof value !== 'object' || value === null) {
+    return null;
+  }
+  const { lines, cini, synergy, bridge } = value as Record<string, unknown>;
+  if (!isCount(lines) || !isCount(cini) || !isCount(synergy) || !isCount(bridge)) {
+    return null;
+  }
+  return { lines, cini, synergy, bridge };
 }
 
 /** Kaydi guncel semaya cikarir; zincir kirilirsa null. */
@@ -232,26 +346,51 @@ export function deserializeGame(json: string): GameState | null {
 
   const board = parseBoard(saved.board);
   const tray = parseTray(saved.tray);
+  const cat = parseCat(saved.cat);
+  const gull = parseGull(saved.gull);
+  const curses = parseCurses(saved.curses);
+  const progress = parseProgress(saved.progress);
 
   if (
     board === null ||
     tray === null ||
+    cat === undefined ||
+    gull === undefined ||
+    curses === null ||
+    progress === null ||
     !isFiniteNumber(saved.score) ||
     !isFiniteNumber(saved.seed) ||
     !isPiecesDrawn(saved.piecesDrawn) ||
     !isStatus(saved.status) ||
-    !isStreak(saved.comboStreak) ||
-    !isCount(saved.teaBreaksLeft)
+    !isCount(saved.comboStreak) ||
+    !isCount(saved.teaBreaksLeft) ||
+    !isMode(saved.mode) ||
+    typeof saved.esnafId !== 'string' ||
+    !(saved.levelId === null || typeof saved.levelId === 'string') ||
+    !isCount(saved.moves) ||
+    !isCount(saved.hagglesLeft)
   ) {
     return null;
   }
+
+  // Bilinmeyen seviye kimligi (silinmis seviye) kaydi gecersiz kilar.
+  const level = levelById(saved.levelId);
+  if (saved.levelId !== null && level === undefined) {
+    return null;
+  }
+  const rules = rulesFor({ mode: saved.mode, esnafId: saved.esnafId, overrides: level?.overrides });
 
   // Durum kaydedildigi gibi degil, tahtadan YENIDEN TURETILIR.
   // Sekil tanimlari surumler arasinda degisirse (ayni id, farkli hucreler)
   // kayitli "playing" durumu hicbir parcanin sigmadigi bir tahtaya
   // uygulanabilir; oyuncu oyun sonu ekranini goremeden ekranda kilitlenirdi.
   const remaining = tray.filter((piece): piece is Piece => piece !== undefined);
-  const status: GameStatus = isGameOver(board, remaining) ? 'gameOver' : saved.status;
+  const status: GameStatus =
+    saved.status === 'won'
+      ? 'won'
+      : isGameOver(withCatBlocked(board, cat), remaining)
+        ? 'gameOver'
+        : saved.status;
 
   return {
     board,
@@ -262,9 +401,21 @@ export function deserializeGame(json: string): GameState | null {
     status,
     comboStreak: saved.comboStreak,
     teaBreaksLeft: saved.teaBreaksLeft,
+    mode: saved.mode,
+    esnafId: saved.esnafId,
+    rules,
+    levelId: saved.levelId,
+    moves: saved.moves,
+    cat,
+    gull,
+    curses,
+    hagglesLeft: saved.hagglesLeft,
+    progress,
     // Animasyon ipuclari gecicidir; geri yuklerken sifirlanir.
     lastClear: { rows: [], cols: [] },
     lastGain: 0,
     lastCini: { rows: [], cols: [] },
+    events: [],
+    lastBonuses: [],
   };
 }
