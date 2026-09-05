@@ -17,8 +17,8 @@ React Native Skia and Reanimated._
 | 1      | Oyun mantığı (`src/game/core`), TDD, %90 coverage            | ✅ Tamam    |
 | 2      | Skia render katmanı (8×10 grid, parça tepsisi)               | ✅ Tamam    |
 | 3      | Gesture + sürükle-bırak + oyun döngüsü                       | ✅ Tamam    |
-| 4      | Ses, kalıcı depolama (MMKV), duraklat/devam                  | ⏳ Sıradaki |
-| 5      | 5 İstanbul teması, oyun modları, onboarding                  | —           |
+| 4      | Ses, kalıcı depolama (MMKV), yüksek skor, ayarlar            | ✅ Tamam    |
+| 5      | 5 İstanbul teması, oyun modları, onboarding                  | ⏳ Sıradaki |
 | 6      | EAS build + Google Play yayını (kapalı test → production)    | —           |
 | 7      | iOS portu + App Store (v1.1, yalnızca v1.0 tutarsa)          | —           |
 
@@ -83,6 +83,19 @@ içindeki `no-restricted-imports` kuralı `src/game/core/**` altında
 React/React Native/Expo/Zustand importunu hata sayar. Böylece oyun mantığı
 render'dan bağımsız kalır ve milisaniyeler içinde test edilebilir.
 
+## Açık Kalan İş: ses içeriği
+
+`assets/sounds/` içindeki dosyalar
+[scripts/generate-placeholder-sounds.mjs](scripts/generate-placeholder-sounds.mjs)
+ile üretilen **sentetik tonlardır**. Spesifikasyonun istediği Türkçe sesli
+efektler (simitçi "Günaydııın!", çaydanlık, vapur düdüğü, "Afiyet olsun!")
+kayıt gerektirir ve kod tarafından üretilemez.
+
+Ses sistemi hazır ve testli; gerçek kayıtlar geldiğinde `assets/sounds/`
+içindeki dosyaları aynı adlarla değiştirmek yeterli — kodda değişiklik
+gerekmez. Beklenen dosyalar: `place`, `clear`, `combo`, `invalid`,
+`gameOver` (`.wav` veya `.mp3`).
+
 ## Yayın Stratejisi
 
 **v1.0: yalnızca Google Play.** Gerekçe: Apple $99/yıl'a karşı Play $25 tek
@@ -124,6 +137,10 @@ testçi toplama işine sprint başlamadan başlanmalıdır.
   durumu bu yolla yakalanamaz.
 - **Emülatörde ilk soğuk açılış ANR verebilir.** Skia'nın eklediği yükle
   başlangıç zaman aşımına uğrayabiliyor; ikinci açılış sorunsuz.
+- **MMKV v4'te metod adı `remove()`,** v3'teki `delete()` kaldırılmış.
+- **MMKV ve expo-audio Jest'te import anında patlar** (native modül yok).
+  MMKV'nin kendi `isTest()` mock'u yetmez; sorun çalışma anında değil
+  yüklenme anında. İkisi için de kök `__mocks__` altında manuel mock var.
 - **Yerel derlemede tek ABI kullanın:** `npm run android:emu` yalnızca x86_64
   derler; dört mimari 9 dakika sürerken bu 1.5 dakika.
 
