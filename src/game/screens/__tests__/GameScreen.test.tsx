@@ -179,3 +179,79 @@ describe('cay molasi dugmesi', () => {
     expect(screen.queryByLabelText('Çay molası')).toBeNull();
   });
 });
+
+describe('canli carsi ekrani', () => {
+  it('canli modda kedi ve pazarlik gostergesi vardir', async () => {
+    useGameStore.getState().newGame(SEED, { mode: 'canli' });
+
+    await render(<GameScreen />);
+
+    expect(screen.getByTestId('entity-overlay')).toBeOnTheScreen();
+    expect(screen.getByLabelText(/Pazarlık, \d hak/)).toBeOnTheScreen();
+  });
+
+  it('pazarlik dugmesi paneli acar, vazgec kapatir', async () => {
+    useGameStore.getState().newGame(SEED, { mode: 'canli' });
+    await render(<GameScreen />);
+
+    fireEvent.press(screen.getByLabelText(/Pazarlık, \d hak/));
+    expect(await screen.findByTestId('haggle-panel')).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByLabelText('Vazgeç'));
+    await waitFor(() => expect(screen.queryByTestId('haggle-panel')).toBeNull());
+  });
+
+  it('pazarlik sonucu store`a islenir ve panel kapanir', async () => {
+    useGameStore.getState().newGame(SEED, { mode: 'canli' });
+    const before = useGameStore.getState().hagglesLeft;
+    await render(<GameScreen />);
+
+    fireEvent.press(screen.getByLabelText(/Pazarlık, \d hak/));
+    fireEvent.press(await screen.findByLabelText('1. parçayı pazarlığa koy'));
+    fireEvent.press(await screen.findByLabelText('Dur'));
+
+    await waitFor(() => expect(useGameStore.getState().hagglesLeft).toBe(before - 1));
+    await waitFor(() => expect(screen.queryByTestId('haggle-panel')).toBeNull());
+  });
+
+  it('semt kazanilinca kutlama paneli ve sonraki semt dugmesi', async () => {
+    useGameStore.getState().newGame(SEED, { mode: 'journey', levelId: 'eminonu' });
+    useGameStore.setState({ status: 'won' });
+
+    await render(<GameScreen onExit={jest.fn()} />);
+
+    expect(screen.getByLabelText('Semt tamamlandı')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Sonraki semt')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Çarşıya dön')).toBeOnTheScreen();
+  });
+
+  it('sonraki semt dugmesi yeni seviyeyi baslatir', async () => {
+    useGameStore.getState().newGame(SEED, { mode: 'journey', levelId: 'eminonu' });
+    useGameStore.setState({ status: 'won' });
+    await render(<GameScreen />);
+
+    fireEvent.press(screen.getByLabelText('Sonraki semt'));
+
+    await waitFor(() => expect(useGameStore.getState().levelId).toBe('misir-carsisi'));
+    expect(useGameStore.getState().status).toBe('playing');
+  });
+
+  it('oyun sonu ozeti unvani gosterir', async () => {
+    useGameStore.setState({ status: 'gameOver' });
+
+    await render(<GameScreen />);
+
+    expect(screen.getByText(/Unvanın:/)).toBeOnTheScreen();
+    expect(screen.getByText(/çizgi · /)).toBeOnTheScreen();
+  });
+
+  it('carsiya don dugmesi onExit cagirir', async () => {
+    const onExit = jest.fn();
+    useGameStore.setState({ status: 'gameOver' });
+    await render(<GameScreen onExit={onExit} />);
+
+    fireEvent.press(screen.getByLabelText('Çarşıya dön'));
+
+    expect(onExit).toHaveBeenCalled();
+  });
+});

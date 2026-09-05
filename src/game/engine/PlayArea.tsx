@@ -5,11 +5,13 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { GameCanvas } from './GameCanvas';
 import { ClearBurst } from './ClearBurst';
 import { DragPiece } from './DragPiece';
+import { EntityOverlay } from './EntityOverlay';
 import { GhostOverlay } from './GhostOverlay';
 import { PieceTray } from './PieceTray';
 
 import { LAYOUT } from '@/constants/config';
-import { computeBoardLayout, computeTrayLayout, traySlotAt } from '@/game/core/layout';
+import type { Cat, Curse, Gull } from '@/game/core/game';
+import { computeBoardLayout, computeTrayLayout, pointToCell, traySlotAt } from '@/game/core/layout';
 import { dragOrigin, previewPlacement } from '@/game/core/placement';
 import type { Board, FullLines, Piece, Point } from '@/game/core/types';
 import type { Theme } from '@/game/data/themes';
@@ -40,11 +42,18 @@ interface PlayAreaProps {
    * bos ise efekt cizilmez.
    */
   readonly burst?: { readonly lines: FullLines; readonly token: string };
+  /** Canli ogeler (kedi, marti, nazar). Verilmezse cizilmez. */
+  readonly cat?: Cat | null;
+  readonly gull?: Gull | null;
+  readonly curses?: readonly Curse[];
   /** Gecerli bir birakma oldugunda cagrilir. */
   readonly onDrop: (trayIndex: number, origin: Point) => void;
+  /** Kedinin hucresine dokunulunca cagrilir. */
+  readonly onPet?: () => void;
 }
 
 export const PLAY_PAN_TEST_ID = 'play-pan';
+export const PLAY_TAP_TEST_ID = 'play-tap';
 
 /**
  * Tahta + tepsi + surukleme etkilesimi.
@@ -60,7 +69,19 @@ export const PLAY_PAN_TEST_ID = 'play-pan';
  * o yol Sprint 3'te olcum yapmadan girilecek bir karmasiklik degil.
  * Olcum altyapisi kurulunca (PerformanceMonitor) tekrar degerlendirilecek.
  */
-export function PlayArea({ board, tray, width, theme, maxHeight, burst, onDrop }: PlayAreaProps) {
+export function PlayArea({
+  board,
+  tray,
+  width,
+  theme,
+  maxHeight,
+  burst,
+  cat = null,
+  gull = null,
+  curses = [],
+  onDrop,
+  onPet,
+}: PlayAreaProps) {
   const trayLayout = useMemo(() => computeTrayLayout(width), [width]);
 
   // Tahtaya kalan yukseklik: toplam alandan tepsi ve aradaki bosluk dusulur.
@@ -140,6 +161,21 @@ export function PlayArea({ board, tray, width, theme, maxHeight, burst, onDrop }
     }
   }, [tray, boardLayout, onDrop, updateDrag]);
 
+  // Tahtada kedinin hucresine dokunmak oksar. Tap, pan ile YARIS halinde:
+  // parmak hareket ederse pan kazanir, kalkarsa tap.
+  const handleTap = useCallback(
+    (event: { x: number; y: number }) => {
+      if (cat === null || onPet === undefined || event.y >= trayTop) {
+        return;
+      }
+      const cell = pointToCell(boardLayout, { x: event.x, y: event.y });
+      if (cell !== null && cell.x === cat.x && cell.y === cat.y) {
+        onPet();
+      }
+    },
+    [cat, onPet, trayTop, boardLayout],
+  );
+
   /*
    * react-hooks/refs asagida devre disi.
    *
@@ -153,22 +189,24 @@ export function PlayArea({ board, tray, width, theme, maxHeight, burst, onDrop }
    * yapilandirmasi demek. Ref hem daha ucuz hem de dogru.
    */
   /* eslint-disable react-hooks/refs */
-  const pan = useMemo(
-    () =>
-      Gesture.Pan()
-        .runOnJS(true)
-        .withTestId(PLAY_PAN_TEST_ID)
-        .onBegin(handleBegin)
-        .onUpdate(handleUpdate)
-        .onFinalize(handleFinalize),
-    [handleBegin, handleUpdate, handleFinalize],
-  );
+  const gesture = useMemo(() => {
+    const pan = Gesture.Pan()
+      .runOnJS(true)
+      .withTestId(PLAY_PAN_TEST_ID)
+      .onBegin(handleBegin)
+      .onUpdate(handleUpdate)
+      .onFinalize(handleFinalize);
+    const tap = Gesture.Tap().runOnJS(true).withTestId(PLAY_TAP_TEST_ID).onEnd(handleTap);
+    return Gesture.Race(pan, tap);
+  }, [handleBegin, handleUpdate, handleFinalize, handleTap]);
   /* eslint-enable react-hooks/refs */
 
   return (
-    <GestureDetector gesture={pan}>
+    <GestureDetector gesture={gesture}>
       <View style={[styles.container, { width }]}>
         <GameCanvas board={board} layout={boardLayout} theme={theme} />
+
+        <EntityOverlay cat={cat} gull={gull} curses={curses} layout={boardLayout} theme={theme} />
 
         {burst !== undefined ? (
           <ClearBurst lines={burst.lines} token={burst.token} layout={boardLayout} theme={theme} />

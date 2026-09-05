@@ -1,44 +1,143 @@
-import { Suspense, lazy } from 'react';
-import { ActivityIndicator, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useCallback } from 'react';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
-import { Text, View } from '@/components/Themed';
-import { useSkiaWebReady } from '@/hooks/useSkiaWebReady';
+import { Heading, Text, useThemeColor } from '@/components/Themed';
+import { seedFromDate } from '@/game/core/rng';
+import type { GameMode } from '@/game/core/rules';
+import { titleFor } from '@/game/core/titles';
+import { dayPhaseAt } from '@/game/data/dayCycle';
+import { esnafById } from '@/game/data/esnaflar';
+import { useGameStore } from '@/game/store/gameStore';
 
-/**
- * Oyun ekrani TEMBEL yuklenir.
- *
- * Skia'nin ana modulu import aninda global CanvasKit'i yakaliyor. Web'de
- * CanvasKit WASM ile sonradan geldigi icin, Skia kullanan modul uygulama
- * giris grafiginde statik bulunursa undefined bir CanvasKit ile kurulur.
- * lazy(), importu render anina erteler; render de ancak CanvasKit hazir
- * olduktan sonra yapilir.
- */
-const GameScreen = lazy(() => import('@/game/screens/GameScreen'));
+interface ModeCard {
+  readonly mode: GameMode;
+  readonly emoji: string;
+  readonly title: string;
+  readonly text: string;
+}
 
-function Loading() {
+const MODES: readonly ModeCard[] = [
+  {
+    mode: 'canli',
+    emoji: '🐈',
+    title: 'Canlı Çarşı',
+    text: 'Tekir, martı, nazar, sinerji ve pazarlık. Çarşının tamamı.',
+  },
+  {
+    mode: 'classic',
+    emoji: '🧱',
+    title: 'Klasik',
+    text: 'Saf blok bulmaca. Sadece sen ve tahta.',
+  },
+  {
+    mode: 'daily',
+    emoji: '📅',
+    title: 'Günün Çarşısı',
+    text: 'Herkes bugün aynı parçaları çeker. Skorunu karşılaştır.',
+  },
+];
+
+const PHASE_TITLE = {
+  morning: 'Günaydın',
+  day: 'Hoş geldin',
+  evening: 'İyi akşamlar',
+  night: 'İyi geceler',
+} as const;
+
+/** Ana ekran: mod secimi, devam eden oyun, yolculuk ve unvan. */
+export default function HomeScreen() {
+  const router = useRouter();
+  const tint = useThemeColor({}, 'tint');
+  const surface = useThemeColor({}, 'surface');
+  const accent = useThemeColor({}, 'accent');
+
+  const status = useGameStore((state) => state.status);
+  const mode = useGameStore((state) => state.mode);
+  const score = useGameStore((state) => state.score);
+  const stats = useGameStore((state) => state.stats);
+  const postcards = useGameStore((state) => state.postcards);
+  const esnafId = useGameStore((state) => state.selectedEsnafId);
+  const newGame = useGameStore((state) => state.newGame);
+
+  const start = useCallback(
+    (nextMode: GameMode) => {
+      // Gunun Carsisi: tarih seed'i, herkes ayni tahta. Digerleri: rastgele.
+      const seed = nextMode === 'daily' ? seedFromDate(new Date()) : Date.now() % 1_000_000_007;
+      newGame(seed, { mode: nextMode });
+      router.push('/game');
+    },
+    [newGame, router],
+  );
+
+  const title = titleFor(stats);
+  const esnaf = esnafById(esnafId);
+
   return (
-    <View style={styles.container}>
-      <ActivityIndicator />
-      <Text style={styles.label}>Oyun hazırlanıyor…</Text>
-    </View>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Heading>{`${PHASE_TITLE[dayPhaseAt(new Date())]}, ${title.name}!`}</Heading>
+      <Text style={styles.sub}>
+        {`${esnaf?.emoji ?? ''} ${esnaf?.name ?? ''} · ${postcards.length} kartpostal · ${stats.games} oyun`}
+      </Text>
+
+      {status === 'playing' && score > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Devam et"
+          onPress={() => router.push('/game')}
+          style={[styles.card, { backgroundColor: tint }]}
+        >
+          <Text style={[styles.cardTitle, styles.onTint]}>▶ Devam et</Text>
+          <Text
+            style={[styles.cardText, styles.onTint]}
+          >{`${score} puan · ${modeName(mode)}`}</Text>
+        </Pressable>
+      ) : null}
+
+      {MODES.map((card) => (
+        <Pressable
+          key={card.mode}
+          accessibilityRole="button"
+          accessibilityLabel={card.title}
+          onPress={() => start(card.mode)}
+          style={[styles.card, { backgroundColor: surface }]}
+        >
+          <Text style={styles.cardTitle}>{`${card.emoji} ${card.title}`}</Text>
+          <Text style={styles.cardText}>{card.text}</Text>
+        </Pressable>
+      ))}
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="İstanbul Yolculuğu"
+        onPress={() => router.push('/journey')}
+        style={[styles.card, { backgroundColor: surface, borderColor: accent, borderWidth: 1 }]}
+      >
+        <Text style={styles.cardTitle}>🗺️ İstanbul Yolculuğu</Text>
+        <Text style={styles.cardText}>Semt semt ilerle, kartpostal topla, esnafları aç.</Text>
+      </Pressable>
+    </ScrollView>
   );
 }
 
-export default function PlayScreen() {
-  const skiaReady = useSkiaWebReady();
-
-  if (!skiaReady) {
-    return <Loading />;
+function modeName(mode: GameMode): string {
+  switch (mode) {
+    case 'canli':
+      return 'Canlı Çarşı';
+    case 'classic':
+      return 'Klasik';
+    case 'daily':
+      return 'Günün Çarşısı';
+    case 'journey':
+      return 'Yolculuk';
   }
-
-  return (
-    <Suspense fallback={<Loading />}>
-      <GameScreen />
-    </Suspense>
-  );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  label: { fontSize: 14, opacity: 0.7 },
+  container: { padding: 20, gap: 12, alignItems: 'stretch' },
+  sub: { fontSize: 13, opacity: 0.7, marginBottom: 8 },
+  card: { borderRadius: 16, padding: 16, gap: 4, minHeight: 64 },
+  cardTitle: { fontSize: 18, fontWeight: '700' },
+  cardText: { fontSize: 13, opacity: 0.8 },
+  onTint: { color: '#fff', opacity: 1 },
 });

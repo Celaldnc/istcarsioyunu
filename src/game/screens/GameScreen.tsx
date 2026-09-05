@@ -8,26 +8,47 @@
  * ilk cizimde "Cannot read properties of undefined (reading
  * 'PictureRecorder')" ile patlar.
  *
- * Bu dosya src/app/(tabs)/index.tsx tarafindan TEMBEL yuklenir; yukleme
- * ancak CanvasKit hazir olduktan sonra tetiklenir.
+ * Bu dosya src/app/game.tsx tarafindan TEMBEL yuklenir; yukleme ancak
+ * CanvasKit hazir olduktan sonra tetiklenir.
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 
 import { EsnafBubble } from '@/components/EsnafBubble';
 import { FloatingGain } from '@/components/FloatingGain';
+import { HagglePanel } from '@/components/HagglePanel';
+import { LiveHud } from '@/components/LiveHud';
 import { RecordBar } from '@/components/RecordBar';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { Heading, Text, View, useThemeColor } from '@/components/Themed';
 import { levelForScore } from '@/game/core/level';
+import { nextLevelId } from '@/game/core/levels';
 import { streakMultiplier } from '@/game/core/score';
+import { titleFor } from '@/game/core/titles';
 import type { Point } from '@/game/core/types';
+import { dayPhaseAt, themeForPhase, type DayPhase } from '@/game/data/dayCycle';
+import { districtById } from '@/game/data/journey';
 import { DEFAULT_THEME } from '@/game/data/themes';
 import { PlayArea } from '@/game/engine/PlayArea';
 import { useGameStore } from '@/game/store/gameStore';
 import { usePersistOnBackground } from '@/hooks/usePersistOnBackground';
 
-export default function GameScreen() {
+interface GameScreenProps {
+  /** "Carsiya don" — rota katmani verir; testte gerekmez. */
+  readonly onExit?: () => void;
+}
+
+/** Gunun fazi; dakikada bir tazelenir ki uzun oturumda aksam gelsin. */
+function useDayPhase(): DayPhase {
+  const [phase, setPhase] = useState<DayPhase>(() => dayPhaseAt(new Date()));
+  useEffect(() => {
+    const timer = setInterval(() => setPhase(dayPhaseAt(new Date())), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  return phase;
+}
+
+export default function GameScreen({ onExit }: GameScreenProps) {
   const { width } = useWindowDimensions();
   const linkColor = useThemeColor({}, 'link');
   const accent = useThemeColor({}, 'accent');
@@ -41,16 +62,30 @@ export default function GameScreen() {
   const lastClear = useGameStore((state) => state.lastClear);
   const lastCini = useGameStore((state) => state.lastCini);
   const lastGain = useGameStore((state) => state.lastGain);
+  const lastBonuses = useGameStore((state) => state.lastBonuses);
   const piecesDrawn = useGameStore((state) => state.piecesDrawn);
   const teaBreaksLeft = useGameStore((state) => state.teaBreaksLeft);
   const esnaf = useGameStore((state) => state.esnaf);
+  const cat = useGameStore((state) => state.cat);
+  const gull = useGameStore((state) => state.gull);
+  const curses = useGameStore((state) => state.curses);
+  const hagglesLeft = useGameStore((state) => state.hagglesLeft);
+  const levelId = useGameStore((state) => state.levelId);
+  const progress = useGameStore((state) => state.progress);
+  const stats = useGameStore((state) => state.stats);
   const persistNow = useGameStore((state) => state.persistNow);
   const play = useGameStore((state) => state.play);
   const playAgain = useGameStore((state) => state.playAgain);
   const teaBreak = useGameStore((state) => state.teaBreak);
+  const pet = useGameStore((state) => state.pet);
+  const haggle = useGameStore((state) => state.haggle);
+  const newGame = useGameStore((state) => state.newGame);
 
   // Android uygulamayi arka planda haber vermeden oldurebiliyor.
   usePersistOnBackground(persistNow);
+
+  const phase = useDayPhase();
+  const theme = useMemo(() => themeForPhase(DEFAULT_THEME, phase), [phase]);
 
   // Oyun alanina KALAN yukseklik olculur. Olcum flex:1 bir yuvada yapiliyor;
   // dogrudan PlayArea'yi olcmek icerik <-> yukseklik geri besleme dongusu
@@ -67,6 +102,17 @@ export default function GameScreen() {
     [play],
   );
 
+  const [haggling, setHaggling] = useState(false);
+  const openHaggle = useCallback(() => setHaggling(true), []);
+  const closeHaggle = useCallback(() => setHaggling(false), []);
+  const handleHaggle = useCallback(
+    (trayIndex: number, success: boolean) => {
+      haggle(trayIndex, success);
+      setHaggling(false);
+    },
+    [haggle],
+  );
+
   // Hamle kimligi: skor her temizlemede artar, piecesDrawn her tepside,
   // teaBreaksLeft her molada. Ucu birlikte her efektli hamlede degisir.
   const moveToken = `${score}:${piecesDrawn}:${teaBreaksLeft}`;
@@ -74,20 +120,48 @@ export default function GameScreen() {
 
   const lineCount = lastClear.rows.length + lastClear.cols.length;
   const ciniCount = lastCini.rows.length + lastCini.cols.length;
-  const gainLabel = ciniCount > 0 ? 'Çini!' : lineCount >= 2 ? 'Combo!' : undefined;
+  const bonusLabel =
+    lastBonuses.find((b) => b.kind === 'makam') !== undefined
+      ? 'Makam!'
+      : lastBonuses.find((b) => b.kind === 'bridge') !== undefined
+        ? 'Köprü!'
+        : lastBonuses.find((b) => b.kind === 'synergy') !== undefined
+          ? 'Sinerji!'
+          : lastBonuses.find((b) => b.kind === 'gullFed') !== undefined
+            ? 'Simit!'
+            : lastBonuses.find((b) => b.kind === 'nazar') !== undefined
+              ? 'Nazar bozuldu!'
+              : ciniCount > 0
+                ? 'Çini!'
+                : lineCount >= 2
+                  ? 'Combo!'
+                  : undefined;
+
+  const district = levelId === null ? undefined : districtById(levelId);
+  const next = levelId === null ? undefined : nextLevelId(levelId);
+  const title = titleFor(stats);
 
   return (
     <View style={styles.container}>
       <View style={styles.scores}>
         <View style={styles.scoreSlot}>
           <ScoreBadge score={score} />
-          <FloatingGain gain={lastGain} token={moveToken} label={gainLabel} />
+          <FloatingGain gain={lastGain} token={moveToken} label={bonusLabel} />
         </View>
         <ScoreBadge score={levelForScore(score)} label="Seviye" />
         {highScore > 0 ? <ScoreBadge score={highScore} label="En iyi" /> : null}
       </View>
 
       <RecordBar score={score} highScore={highScore} />
+
+      <LiveHud
+        levelId={levelId}
+        score={score}
+        progress={progress}
+        gull={gull}
+        hagglesLeft={status === 'playing' ? hagglesLeft : 0}
+        onHaggle={openHaggle}
+      />
 
       {/* Seri ancak gercekten zincir kurulunca gosterilir; tek temizlemede
           carpan 1 oldugu icin gurultu yapmaz. */}
@@ -103,15 +177,28 @@ export default function GameScreen() {
 
       <EsnafBubble message={esnaf} />
 
+      {haggling ? (
+        <HagglePanel
+          tray={tray}
+          hagglesLeft={hagglesLeft}
+          onResult={handleHaggle}
+          onClose={closeHaggle}
+        />
+      ) : null}
+
       <View style={styles.playAreaSlot} onLayout={handleAreaLayout}>
         <PlayArea
           board={board}
           tray={tray}
           width={width}
           maxHeight={areaHeight}
-          theme={DEFAULT_THEME}
+          theme={theme}
           burst={burst}
+          cat={cat}
+          gull={gull}
+          curses={curses}
           onDrop={handleDrop}
+          onPet={pet}
         />
       </View>
 
@@ -119,6 +206,12 @@ export default function GameScreen() {
         <View accessible accessibilityLabel="Oyun bitti" style={styles.gameOver}>
           <Heading>Oyun bitti</Heading>
           <Text style={styles.gameOverText}>{`Toplam puan: ${score}`}</Text>
+          <Text style={styles.summary}>
+            {`${progress.lines} çizgi · ${progress.cini} Çini · en uzun seri ${progress.bestStreak}` +
+              (progress.gullsFed > 0 ? ` · ${progress.gullsFed} simit` : '') +
+              (progress.catMoves > 0 ? ` · Tekir ${progress.catMoves} kez taşındı` : '')}
+          </Text>
+          <Text style={[styles.summary, { color: accent }]}>{`Unvanın: ${title.name}`}</Text>
 
           <View style={styles.actions}>
             {teaBreaksLeft > 0 ? (
@@ -141,6 +234,47 @@ export default function GameScreen() {
             >
               <Text style={[styles.actionText, { color: linkColor }]}>Tekrar oyna</Text>
             </Pressable>
+
+            {onExit !== undefined ? (
+              <Pressable
+                onPress={onExit}
+                accessibilityRole="button"
+                accessibilityLabel="Çarşıya dön"
+                style={styles.action}
+              >
+                <Text style={[styles.actionText, { color: linkColor }]}>Çarşıya dön</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+
+      {status === 'won' ? (
+        <View accessible accessibilityLabel="Semt tamamlandı" style={styles.gameOver}>
+          <Heading>{`${district?.emoji ?? '🎉'} ${district?.name ?? 'Semt'} tamam!`}</Heading>
+          <Text style={styles.gameOverText}>Kartpostal koleksiyonuna eklendi.</Text>
+
+          <View style={styles.actions}>
+            {next !== undefined ? (
+              <Pressable
+                onPress={() => newGame(undefined, { mode: 'journey', levelId: next })}
+                accessibilityRole="button"
+                accessibilityLabel="Sonraki semt"
+                style={styles.action}
+              >
+                <Text style={[styles.actionText, { color: accent }]}>Sonraki semt →</Text>
+              </Pressable>
+            ) : null}
+            {onExit !== undefined ? (
+              <Pressable
+                onPress={onExit}
+                accessibilityRole="button"
+                accessibilityLabel="Çarşıya dön"
+                style={styles.action}
+              >
+                <Text style={[styles.actionText, { color: linkColor }]}>Çarşıya dön</Text>
+              </Pressable>
+            ) : null}
           </View>
         </View>
       ) : null}
@@ -153,7 +287,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 10,
     paddingVertical: 12,
   },
   scores: { flexDirection: 'row', alignItems: 'flex-end', gap: 24 },
@@ -162,12 +296,13 @@ const styles = StyleSheet.create({
   playAreaSlot: { flex: 1, justifyContent: 'center', width: '100%' },
   gameOver: { alignItems: 'center', gap: 4 },
   gameOverText: { fontSize: 14, opacity: 0.7 },
-  actions: { flexDirection: 'row', gap: 8 },
+  summary: { fontSize: 13, opacity: 0.8, textAlign: 'center' },
+  actions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center' },
   // Material dokunma hedefi 48dp
   action: {
     marginTop: 8,
     paddingVertical: 14,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     minHeight: 48,
     justifyContent: 'center',
   },

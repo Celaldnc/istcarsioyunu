@@ -35,8 +35,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Oyna',
-          tabBarIcon: tabIcon('grid-view'),
+          title: 'Çarşı',
+          tabBarIcon: tabIcon('storefront'),
           headerRight: () => (
             <Link href="/modal" asChild>
               {/* Erisilebilir ad Pressable'a veriliyor: ikon bileseni Android'de

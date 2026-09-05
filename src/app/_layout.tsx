@@ -43,6 +43,8 @@ function RootLayoutNav() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="game" options={{ title: 'Çarşı', headerBackTitle: 'Geri' }} />
+          <Stack.Screen name="journey" options={{ title: 'İstanbul Yolculuğu' }} />
           {/* title verilmezse header rota adini ("modal") gosterir. */}
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Hakkında' }} />
         </Stack>
