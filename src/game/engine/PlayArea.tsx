@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { GameCanvas } from './GameCanvas';
+import { ClearBurst } from './ClearBurst';
 import { DragPiece } from './DragPiece';
 import { GhostOverlay } from './GhostOverlay';
 import { PieceTray } from './PieceTray';
@@ -10,7 +11,7 @@ import { PieceTray } from './PieceTray';
 import { LAYOUT } from '@/constants/config';
 import { computeBoardLayout, computeTrayLayout, traySlotAt } from '@/game/core/layout';
 import { dragOrigin, previewPlacement } from '@/game/core/placement';
-import type { Board, Piece, Point } from '@/game/core/types';
+import type { Board, FullLines, Piece, Point } from '@/game/core/types';
 import type { Theme } from '@/game/data/themes';
 
 /** Suruklenen parcanin o anki durumu. Koordinatlar oyun alanina goredir. */
@@ -34,6 +35,11 @@ interface PlayAreaProps {
    * olur.
    */
   readonly maxHeight?: number;
+  /**
+   * Son hamlenin temizleme efekti. `token` her hamlede degisir; `lines`
+   * bos ise efekt cizilmez.
+   */
+  readonly burst?: { readonly lines: FullLines; readonly token: string };
   /** Gecerli bir birakma oldugunda cagrilir. */
   readonly onDrop: (trayIndex: number, origin: Point) => void;
 }
@@ -54,7 +60,7 @@ export const PLAY_PAN_TEST_ID = 'play-pan';
  * o yol Sprint 3'te olcum yapmadan girilecek bir karmasiklik degil.
  * Olcum altyapisi kurulunca (PerformanceMonitor) tekrar degerlendirilecek.
  */
-export function PlayArea({ board, tray, width, theme, maxHeight, onDrop }: PlayAreaProps) {
+export function PlayArea({ board, tray, width, theme, maxHeight, burst, onDrop }: PlayAreaProps) {
   const trayLayout = useMemo(() => computeTrayLayout(width), [width]);
 
   // Tahtaya kalan yukseklik: toplam alandan tepsi ve aradaki bosluk dusulur.
@@ -163,6 +169,10 @@ export function PlayArea({ board, tray, width, theme, maxHeight, onDrop }: PlayA
     <GestureDetector gesture={pan}>
       <View style={[styles.container, { width }]}>
         <GameCanvas board={board} layout={boardLayout} theme={theme} />
+
+        {burst !== undefined ? (
+          <ClearBurst lines={burst.lines} token={burst.token} layout={boardLayout} theme={theme} />
+        ) : null}
 
         {preview !== null && preview.cells.length > 0 ? (
           <GhostOverlay

@@ -18,7 +18,8 @@ React Native Skia and Reanimated._
 | 2      | Skia render katmanı (8×10 grid, parça tepsisi)               | ✅ Tamam    |
 | 3      | Gesture + sürükle-bırak + oyun döngüsü                       | ✅ Tamam    |
 | 4      | Ses, kalıcı depolama (MMKV), yüksek skor, ayarlar            | ✅ Tamam    |
-| 5      | 5 İstanbul teması, oyun modları, onboarding                  | ⏳ Sıradaki |
+| 4.5    | "His paketi": Çini bonusu, Çay molası, esnaf, efektler       | ✅ Tamam    |
+| 5      | Günün Çarşısı, İstanbul Yolculuğu + kartpostallar, temalar   | ⏳ Sıradaki |
 | 6      | EAS build + Google Play yayını (kapalı test → production)    | —           |
 | 7      | iOS portu + App Store (v1.1, yalnızca v1.0 tutarsa)          | —           |
 
@@ -107,7 +108,30 @@ kayıt gerektirir ve kod tarafından üretilemez.
 Ses sistemi hazır ve testli; gerçek kayıtlar geldiğinde `assets/sounds/`
 içindeki dosyaları aynı adlarla değiştirmek yeterli — kodda değişiklik
 gerekmez. Beklenen dosyalar: `place`, `clear`, `combo`, `invalid`,
-`gameOver` (`.wav` veya `.mp3`).
+`gameOver`, `cini` (çay bardağı çınlaması), `levelUp` (vapur düdüğü),
+`record` (fanfar), `teaBreak` (`.wav` veya `.mp3`).
+
+## Oyunu Farklı Kılan Mekanikler (araştırma tabanlı)
+
+Rakip analizinin özeti: Block Blast'ın tutunması kuraldan değil **his**ten
+(rekor çubuğu, başlangıçta "ayarlanmış şans", abartılı geri bildirim), Woodoku'nun
+farkı **ses**ten geliyor; 1 numaralı şikâyet **reklam**. Buna göre eklenenler:
+
+| Mekanik             | Ne yapar                                                                                          | Nerede                          |
+| ------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------- |
+| **Çini bonusu**     | Tek renkli bir çizgi temizlemek +50. Renk türde ilk kez bir strateji boyutu                       | `core/board.ts monochromeLines` |
+| **Yapışkan renk**   | Tepsi içi parça %45 olasılıkla öncekinin rengini alır; Çini kurulabilir olsun. rng tüketimi sabit | `core/pieces.ts pickColor`      |
+| **Kolay başlangıç** | İlk tepsi yalnızca küçük şekiller ("engineered luck")                                             | `core/pieces.ts STARTER_*`      |
+| **Çay molası**      | Oyun başına 1 ücretsiz devam: en dolu 2 satır + 2 sütun boşalır. Rakipler bunu reklama satıyor    | `core/game.ts takeTeaBreak`     |
+| **Çarşı esnafı**    | Yalnızca "an"larda konuşan karakter (rekor, Çini, combo, sıkışma…). Sıradan hamlede susar         | `data/esnaf.ts`                 |
+| **Rekor çubuğu**    | "Rekora N kaldı" → "Yeni rekor!"                                                                  | `components/RecordBar.tsx`      |
+| **Efektler**        | Çizgi parlaması + tema renginde parçacıklar (Skia + Reanimated, UI thread), uçan "+40 Çini!"      | `engine/ClearBurst.tsx`         |
+| **Titreşim**        | Olaya göre hafif/orta/ağır; web'de kapalı; ayarlardan kapatılabilir                               | `game/haptics/`                 |
+
+**Yol haritası (öncelik sırasıyla):** Günün Çarşısı (tarih seed'i hazır) →
+İstanbul Yolculuğu (semt seviyeleri + kartpostal koleksiyonu, temaların
+kilidini açar) → özel hücreler (nazar, çay bardağı), Pazarlık (perk seçimi),
+Boğaz akıntısı modu. v1.0 **reklamsız** çıkar.
 
 ## Yayın Stratejisi
 
@@ -133,6 +157,8 @@ testçi toplama işine sprint başlamadan başlanmalıdır.
 | **`noUncheckedIndexedAccess: true`** | `board[y][x]` erişimi `Cell \| undefined` döner; sınır taşması bug'ları derleme zamanında yakalanır                                                                                                                           |
 | **Development build**, Expo Go değil | Skia + MMKV + Nitro Expo Go'da çalışmaz                                                                                                                                                                                       |
 | **pre-commit hızlı, pre-push tam**   | 40 sn'lik pre-commit commit'ten kaçınmaya yol açar; garanti aynı, dağıtımı farklı                                                                                                                                             |
+| **Kayıt göçü, atma değil**           | `SAVE_VERSION` artınca eski kayıt `MIGRATIONS` zinciriyle güncel şemaya çıkarılır (v1→v2 seri, v2→v3 Çay molası). Oyuncu güncelleme yüzünden oyununu kaybetmez                                                                |
+| **Reanimated 4 Jest kurulumu**       | `resolver: 'react-native-worklets/jest/resolver'` + `setUpTests()`; aksi halde `loadUnpackers` hatası. Zamanlayıcıdan gelen state güncellemeleri React 19'da yalnızca **async `act`** ile flush olur                          |
 
 ## Bilinen Tuzaklar
 

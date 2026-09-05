@@ -8,6 +8,8 @@ import { useGameStore } from '@/game/store/gameStore';
 export default function SettingsScreen() {
   const soundEnabled = useGameStore((state) => state.soundEnabled);
   const setSoundEnabled = useGameStore((state) => state.setSoundEnabled);
+  const hapticsEnabled = useGameStore((state) => state.hapticsEnabled);
+  const setHapticsEnabled = useGameStore((state) => state.setHapticsEnabled);
   const highScore = useGameStore((state) => state.highScore);
   const theme = Colors[useColorScheme()];
 
@@ -22,6 +24,17 @@ export default function SettingsScreen() {
           value={soundEnabled}
           onValueChange={setSoundEnabled}
           accessibilityLabel="Ses efektleri"
+          accessibilityRole="switch"
+          trackColor={{ true: theme.tint, false: theme.tabIconDefault }}
+        />
+      </View>
+
+      <View style={styles.row}>
+        <Text style={styles.rowLabel}>Titreşim</Text>
+        <Switch
+          value={hapticsEnabled}
+          onValueChange={setHapticsEnabled}
+          accessibilityLabel="Titreşim"
           accessibilityRole="switch"
           trackColor={{ true: theme.tint, false: theme.tabIconDefault }}
         />

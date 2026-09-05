@@ -25,6 +25,8 @@ export interface Theme {
   readonly ghostValid: string;
   /** Gecersiz yerlestirme onizlemesi */
   readonly ghostInvalid: string;
+  /** Temizlenen cizginin anlik parlamasi */
+  readonly flash: string;
 }
 
 /** Kapalicarsi: sicak turuncu-sari, bakir ve cay tonlari. */
@@ -43,6 +45,7 @@ export const CARSI: Theme = {
   ],
   ghostValid: '#4E8A3C',
   ghostInvalid: '#B33A3A',
+  flash: '#FFF6E0',
 };
 
 export const THEMES: readonly Theme[] = [CARSI];

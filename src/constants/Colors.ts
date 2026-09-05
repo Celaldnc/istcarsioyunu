@@ -20,6 +20,9 @@ export default {
     tabIconSelected: tintColorLight,
     separator: '#e0e0e0', //    dekoratif ayrac
     link: '#1b6b9d', //         5.77:1
+    surface: '#f3ede3', //      baloncuk/kart zemini (sicak, Carsi paletiyle uyumlu)
+    accent: '#9a6200', //       rekor/altin vurgusu; #fff uzerinde 5.9:1
+    accentTrack: '#e8dcc6', //  ilerleme cubugu rayi (dekoratif)
   },
   dark: {
     // Arka plan #000 yerine #121212: React Navigation DarkTheme'in kart/header
@@ -31,5 +34,8 @@ export default {
     tabIconSelected: tintColorDark,
     separator: 'rgba(255,255,255,0.14)',
     link: '#55b8f6', //         8.54:1
+    surface: '#232323', //      baloncuk/kart zemini
+    accent: '#ffc857', //       #121212 uzerinde 12.4:1
+    accentTrack: '#3a3a3a', //  ilerleme cubugu rayi (dekoratif)
   },
 };

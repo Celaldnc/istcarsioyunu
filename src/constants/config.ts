@@ -134,6 +134,25 @@ export const COMBO = {
   MAX_STREAK_MULTIPLIER: 4,
 } as const;
 
+export const FX = {
+  /** Esnaf baloncugunun ekranda kalma suresi (ms). */
+  ESNAF_SHOW_MS: 2600,
+  /** Baloncugun acilis/kapanis gecis suresi (ms). */
+  ESNAF_FADE_MS: 220,
+  /** "+40" ucan puan yazisinin omru (ms). */
+  GAIN_FLOAT_MS: 900,
+  /** Temizleme patlamasinin (parcacik + cizgi parlamasi) suresi (ms). */
+  CLEAR_BURST_MS: 650,
+  /** Temizlenen her hucre icin ucan parcacik sayisi. */
+  PARTICLES_PER_CELL: 2,
+  /**
+   * Tek patlamadaki parcacik tavani. Her parcacik Skia'da ayri bir cizim ve
+   * Reanimated'da ayri turetilmis deger; 3 cizgilik combo'da bile 60 FPS
+   * korunsun diye sinirli.
+   */
+  MAX_PARTICLES: 64,
+} as const;
+
 export const TIME_ATTACK = {
   /** Time Attack modunun sure limiti (saniye) */
   DURATION_SECONDS: 90,
