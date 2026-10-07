@@ -7,6 +7,36 @@
 _A block-puzzle mobile game themed around Istanbul's bazaars, built solo with Expo,
 React Native Skia and Reanimated._
 
+<p align="center">
+  <img src="gorseller/02-canli-carsi.png" width="200" alt="Canlı Çarşı modu">
+  <img src="gorseller/04-pazarlik.png" width="200" alt="Pazarlık">
+  <img src="gorseller/05-yolculuk.png" width="200" alt="İstanbul Yolculuğu">
+  <img src="gorseller/08-oyun-sonu.png" width="200" alt="Oyun sonu ve kartpostal">
+</p>
+
+## Oyun
+
+8 × 10'luk tahtaya tepsideki 3 parçayı sürükle. Dolan satır ve sütunlar
+temizlenir, parçalar sığmayınca oyun biter. Bloklar birer çarşı eşyasıdır:
+simit, çay bardağı, nazar boncuğu, lokum, fıstık ve dövme bakır. Bir çizgiyi
+tek renkle doldurmak **Çini** bonusu verir.
+
+- **Canlı Çarşı:** Tahtada uyuyan Tekir, blok çalan martı, yayılan nazar,
+  simit+çay sinerjisi, kenar fenerleriyle Çarşı Şenliği, esnafla pazarlık.
+- **Klasik:** Saf blok bulmaca.
+- **Günün Çarşısı:** Herkes o gün aynı parçaları çeker.
+- **İstanbul Yolculuğu:** Eminönü'nden Kadıköy'e 8 semt, hedefli seviyeler,
+  Galata silueti ve Boğaz su şeridi gibi şekilli tahtalar, kartpostal koleksiyonu.
+
+<p align="center">
+  <img src="gorseller/01-ana-ekran.png" width="200" alt="Ana ekran">
+  <img src="gorseller/06-semt.png" width="200" alt="Boğaz semti, su şeridi">
+  <img src="gorseller/07-semt-galata.png" width="200" alt="Galata semti, kule silueti">
+  <img src="gorseller/09-ayarlar.png" width="200" alt="Ayarlar ve esnaf seçimi">
+</p>
+
+📖 **Kurallar, puanlama, semtler, esnaflar ve ipuçları:** [OYNANIS.md](OYNANIS.md)
+
 ---
 
 ## Durum
@@ -144,7 +174,7 @@ Tahta ölü bir ızgara değil, yaşayan bir yer. Klasik mod saf Block Blast; **
 | **Makam serisi** 🎵         | Her ardışık temizleme Nihavend dizisinin bir sonraki notasını çalar; 8'de "makam tamamlandı" +100                                     | `audio/sources.ts`                  |
 | **Pazarlık** 🤝             | Oyun başına 3 hak: yuva seç, kayan ibreyi yeşilde durdur. Tutturursan parça bedava değişir, kaçırırsan -30                            | `core/game.ts haggle`               |
 | **Esnaf seçimi**            | Çırak (perk yok), Simitçi (3 kolay tepsi), Çaycı (2 çay molası), Halıcı (Çini ×2), Balıkçı (sık martı, simit ×2). Kartpostalla açılır | `core/rules.ts`, `data/esnaflar.ts` |
-| **İstanbul Yolculuğu** 🗺️   | 7 semt, hedefli seviyeler, **şekilli tahtalar** (Galata silueti, Kız Kulesi, Boğaz). Boğaz'da su şeridini aşan satır = **Köprü** +50  | `core/levels.ts`, `data/journey.ts` |
+| **İstanbul Yolculuğu** 🗺️   | 8 semt, hedefli seviyeler, **şekilli tahtalar** (Galata silueti, Kız Kulesi, Boğaz). Boğaz'da su şeridini aşan satır = **Köprü** +50  | `core/levels.ts`, `data/journey.ts` |
 | **Kapılar / Şenlik** 🏮     | Kenar çizgileri (üst/alt/sol/sağ) temizlenince fener yanar; dördü yanınca **Çarşı Şenliği**: 3 hamle puan ×2                          | `core/gates.ts`                     |
 | **Boğaz akıntısı** ⛵       | Üsküdar semtinde her 5 hamlede satırlar bir hücre kayar (su şeridi sabit, Tekir'in satırı kaymaz)                                     | `core/current.ts`                   |
 | **Tekir hediyesi**          | Her 3. okşamada kedi 3 rastgele dolu hücreyi boşaltır — kedi engel değil, bakılırsa yardımcı                                          | `core/game.ts petCat`               |
